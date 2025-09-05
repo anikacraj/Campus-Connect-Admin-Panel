@@ -26,10 +26,7 @@ const TableHeader = ({ title, addButtonText }: { title: string, addButtonText: s
                 <Filter className="w-4 h-4" />
                 <span>Filter</span>
             </button>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4" />
-                <span>{addButtonText}</span>
-            </button>
+
         </div>
     </div>
 );
@@ -98,8 +95,8 @@ export default function StudentManage() {
                                             </td>
                                             <td className="py-4 px-6">
                                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${student.status === 'Active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-red-100 text-red-800'
                                                     }`}>
                                                     {student.status}
                                                 </span>

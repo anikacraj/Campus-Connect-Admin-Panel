@@ -26,10 +26,7 @@ const TableHeader = ({ title, addButtonText }: { title: string, addButtonText: s
                 <Filter className="w-4 h-4" />
                 <span>Filter</span>
             </button>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                <Plus className="w-4 h-4" />
-                <span>{addButtonText}</span>
-            </button>
+
         </div>
     </div>
 );
@@ -47,39 +44,6 @@ const ActionButton = ({ icon: Icon, onClick, className = "" }: {
     </button>
 );
 
-const getRoleColor = (role: string) => {
-    switch (role) {
-        case 'Senior Moderator':
-            return 'bg-purple-100 text-purple-800';
-        case 'Junior Moderator':
-            return 'bg-blue-100 text-blue-800';
-        case 'Content Moderator':
-            return 'bg-orange-100 text-orange-800';
-        case 'Technical Moderator':
-            return 'bg-indigo-100 text-indigo-800';
-        case 'Community Moderator':
-            return 'bg-pink-100 text-pink-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
-
-const getPermissionColor = (permission: string) => {
-    switch (permission) {
-        case 'Full Access':
-            return 'bg-red-100 text-red-800';
-        case 'Limited Access':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'Content Only':
-            return 'bg-blue-100 text-blue-800';
-        case 'Technical Access':
-            return 'bg-green-100 text-green-800';
-        case 'Community Access':
-            return 'bg-purple-100 text-purple-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
 
 export default function ModeratorManage() {
     const handleView = (moderatorId: number) => {
