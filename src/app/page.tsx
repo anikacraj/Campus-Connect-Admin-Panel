@@ -1,6 +1,8 @@
 'use client';
 
 import axios from 'axios';
+import { set } from 'mongoose';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
@@ -16,23 +18,36 @@ const router = useRouter();
   // Handle mouse movement for parallax effect
 
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
-try {
-  const response = await axios.post("/api/admin",{ email, password });
-  setIsLoading(false);
-  router.push('/ccAdminDashboard972647');
-} catch (error) {
-  console.error('Login error:', error);
-  setError('An unexpected error occurred. Please try again.');
-  setIsLoading(false);
-}
+    try {
+      // Sign in with credentials
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-   
+      if (res?.error) {
+        setError("Invalid email or password");
+        setIsLoading(false);
+        return;
+      }
+
+      if (res?.ok) {
+        // Redirect to dashboard on successful login
+        router.push("/ccAdminDashboard972647");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
+    }
   };
+
 
   const togglePassword = () => {
     setShowPassword(!showPassword);

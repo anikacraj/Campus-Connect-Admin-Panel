@@ -1,23 +1,29 @@
-import React, { useRef, useState, FormEvent } from "react";
+'use client';
+
+import React, { useRef, FormEvent } from "react";
+import { useState } from "react";
 import { Camera, Upload, X, ChevronDown } from "lucide-react";
+import Image from "next/image";
 
 // ---- Local Types ----
 export type UniRequestPayload = {
   name: string;
-  estd: string;
+  estd: number | string;
   location: string;
   type: string;
   website: string;
   bio: string;
   email: string;
   regNumber: string;
-  logo?: string | null;
+  logoImg?: string | null;
   coverImage?: string | null;
 };
 
 // ---- FormData State ----
 type FormData = UniRequestPayload & {
+  logo: string | null;
   logoPreview: string | null;
+  coverImage: string | null;
   coverImagePreview: string | null;
 };
 
@@ -66,6 +72,25 @@ export const UniRequestScreen: React.FC<{ prefill?: Partial<UniRequestPayload> }
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  // const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if(file){
+  //     const reader =new FileReader();
+  //     reader.onloadend=()=>{
+  //       const base64=reader.result as string;
+  //       setPreview(base64);
+  //       setFormData((prev) => ({ ...prev, logoImg: base64 }));
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
+
+
+
   const handleFileSelect = (
     file: File | undefined,
     type: "logo" | "coverImage"
@@ -110,19 +135,65 @@ export const UniRequestScreen: React.FC<{ prefill?: Partial<UniRequestPayload> }
 
   const errors = getErrors(formData);
   const isFormValid = Object.keys(errors).length === 0 && !submitting;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setError(null);
 
-  const handleSubmit = async (e?: FormEvent) => {
-    e?.preventDefault();
-    setSubmitAttempted(true);
+  try {
+    const payload = {
+      name: formData.name?.trim() || "",
+      logo: formData.logo || "",
+      coverImage: formData.coverImage || "",
+      location: formData.location?.trim() || "",
+      bio: formData.bio?.trim() || "",
+      website: formData.website?.trim() || "",
+      estd: Number(formData.estd) || 0,
+      varsityEmail: formData.email?.trim() || "",
+      type: formData.type?.trim() || "",
+      regNumber: formData.regNumber?.trim() || "",
+    };
 
-    const errs = getErrors(formData);
-    if (Object.keys(errs).length > 0) return;
+    console.log("Submitting payload:", payload);
 
-    setSubmitting(true);
-    console.log("Form submitted:", formData);
-    alert("Form submitted successfully! (frontend only)");
-    setSubmitting(false);
-  };
+    const res = await fetch("/api/universities", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    console.log("Response:", data);
+
+    if (res.ok) {
+      alert("✅ University created successfully!");
+      setFormData({
+        name: "",
+        estd: "",
+        location: "",
+        type: "",
+        website: "",
+        bio: "",
+        email: "",
+        regNumber: "",
+        logo: null,
+        logoPreview: null,
+        coverImage: null,
+        coverImagePreview: null,
+      });
+      setPreview(null);
+    } else {
+      alert(data.error || "Failed to create university");
+    }
+  } catch (err: any) {
+    console.error("Error submitting form:", err);
+    alert("Something went wrong while submitting the form.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   const ImageUploadSection = ({
     title,
@@ -143,7 +214,7 @@ export const UniRequestScreen: React.FC<{ prefill?: Partial<UniRequestPayload> }
         className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors hover:border-blue-500 cursor-pointer ${
           aspectRatio === "wide" ? "min-h-[200px]" : ""
         }`}
-        onClick={() => handleChooseFile(type)}
+        onClick={() => (type)}
       >
         {preview ? (
           <div className="flex flex-col items-center">

@@ -15,10 +15,12 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "env": "^0.0.2",
+    "framer-motion": "^12.23.22",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.542.0",
     "mongoose": "^8.19.0",
     "next": "15.5.0",
+    "next-auth": "^4.24.11",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "tailwind-merge": "^3.3.1"
