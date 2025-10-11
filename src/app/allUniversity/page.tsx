@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, RefreshCw, Trash, Pencil, UserLock, UserCheck, X } from "lucide-react";
+import { Search, RefreshCw, Trash, Pencil, UserLock, UserCheck, X, Users, LayoutGrid, List, Eye } from "lucide-react";
 import Link from "next/link";
 
 interface University {
@@ -19,9 +19,10 @@ interface University {
   varsityEmail: string;
   type: string;
   regNumber: string;
-  isBlocked?: boolean;
+  block: boolean;
   createdAt: string;
   updatedAt: string;
+  totalStudent: string;
 }
 
 interface ConfirmDialogProps {
@@ -108,8 +109,8 @@ export default function UniversityList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
   
-  // Dialog states
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     university: University | null;
@@ -154,7 +155,6 @@ export default function UniversityList() {
     setFilteredUniversities(filtered);
   };
 
-  // Delete University
   const handleDeleteClick = (university: University) => {
     setDeleteDialog({ isOpen: true, university });
   };
@@ -170,7 +170,6 @@ export default function UniversityList() {
       );
 
       if (res.ok) {
-        // Remove from state
         setUniversities((prev) =>
           prev.filter((u) => u._id !== deleteDialog.university!._id)
         );
@@ -190,7 +189,6 @@ export default function UniversityList() {
     }
   };
 
-  // Block/Unblock University
   const handleBlockClick = (university: University) => {
     setBlockDialog({ isOpen: true, university });
   };
@@ -199,32 +197,26 @@ export default function UniversityList() {
     if (!blockDialog.university) return;
     
     setActionLoading(blockDialog.university._id);
-    const newBlockStatus = !blockDialog.university.isBlocked;
     
     try {
       const res = await fetch(
         `/api/universities/${blockDialog.university.regNumber}/block`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ isBlocked: newBlockStatus }),
-        }
+        { method: "PATCH" }
       );
 
       if (res.ok) {
         const result = await res.json();
-        // Update state
         setUniversities((prev) =>
           prev.map((u) =>
             u._id === blockDialog.university!._id
-              ? { ...u, isBlocked: result.data.isBlocked }
+              ? { ...u, block: result.data.block }
               : u
           )
         );
         setFilteredUniversities((prev) =>
           prev.map((u) =>
             u._id === blockDialog.university!._id
-              ? { ...u, isBlocked: result.data.isBlocked }
+              ? { ...u, block: result.data.block }
               : u
           )
         );
@@ -263,7 +255,6 @@ export default function UniversityList() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header + Search */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
           <h1 className="text-4xl font-extrabold text-gray-900">
             🎓 All Universities
@@ -285,6 +276,32 @@ export default function UniversityList() {
               />
             </div>
 
+            {/* View Toggle */}
+            <div className="flex bg-white border border-gray-300 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setViewMode("card")}
+                className={`p-2 transition ${
+                  viewMode === "card"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+                title="Card View"
+              >
+                <LayoutGrid size={20} />
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-2 transition ${
+                  viewMode === "table"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+                title="Table View"
+              >
+                <List size={20} />
+              </button>
+            </div>
+
             <button
               onClick={fetchUniversities}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition"
@@ -295,12 +312,12 @@ export default function UniversityList() {
           </div>
         </div>
 
-        {/* University Grid */}
         {filteredUniversities.length === 0 ? (
           <div className="text-center py-20 text-gray-500 text-lg">
             No universities found.
           </div>
-        ) : (
+        ) : viewMode === "card" ? (
+          // Card View (Vertical)
           <motion.div
             layout
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
@@ -312,19 +329,17 @@ export default function UniversityList() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={`bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border ${
-                  university.isBlocked
+                  university.block
                     ? "border-red-300 opacity-75"
                     : "border-gray-100"
                 }`}
               >
-                {/* Blocked Badge */}
-                {university.isBlocked && (
+                {university.block && (
                   <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 text-center">
                     🚫 BLOCKED
                   </div>
                 )}
 
-                {/* Cover Image */}
                 <div className="relative h-40 w-full bg-gray-100">
                   {university.coverImage ? (
                     <Image
@@ -340,7 +355,6 @@ export default function UniversityList() {
                   )}
                 </div>
 
-                {/* Logo */}
                 <div className="relative flex justify-center -mt-16 px-4">
                   <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
                     {university.logo ? (
@@ -359,7 +373,6 @@ export default function UniversityList() {
                   </div>
                 </div>
 
-                {/* Info Section */}
                 <div className="p-6 text-center">
                   <h2 className="text-lg font-semibold text-gray-900 mb-2">
                     {university.name}
@@ -377,18 +390,27 @@ export default function UniversityList() {
                     <p>
                       <span className="font-semibold">Location:</span> {university.location}
                     </p>
+                    <p>
+                      <span className="font-semibold text-blue-500">Website:</span> <Link className="text-blue-500" href={university.website}>{university.website}</Link>
+                    </p>
+                    <p>
+                      <span className="font-semibold">Email:</span> {university.varsityEmail}
+                    </p>
+                    <div className="flex justify-center items-center">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center">
+                        <Users className="mr-2" size={16} />
+                        <span>{university.totalStudent || 0}</span>
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Bio */}
                   {university.bio && (
                     <p className="mt-3 text-gray-700 text-sm line-clamp-2">
                       {university.bio}
                     </p>
                   )}
 
-                  {/* Action Buttons */}
                   <div className="flex justify-end gap-3 mt-4">
-                    {/* Edit Button */}
                     <Link
                       href={`/allUniversity/edit/${university.regNumber}`}
                       className="p-2 hover:bg-blue-50 rounded-lg transition"
@@ -397,21 +419,19 @@ export default function UniversityList() {
                       <Pencil className="text-blue-500" size={20} />
                     </Link>
 
-                    {/* Block/Unblock Button */}
                     <button
                       onClick={() => handleBlockClick(university)}
                       disabled={actionLoading === university._id}
                       className="p-2 hover:bg-yellow-50 rounded-lg transition disabled:opacity-50"
-                      title={university.isBlocked ? "Unblock University" : "Block University"}
+                      title={university.block ? "Unblock University" : "Block University"}
                     >
-                      {university.isBlocked ? (
+                      {university.block ? (
                         <UserCheck className="text-green-600" size={20} />
                       ) : (
                         <UserLock className="text-yellow-600" size={20} />
                       )}
                     </button>
 
-                    {/* Delete Button */}
                     <button
                       onClick={() => handleDeleteClick(university)}
                       disabled={actionLoading === university._id}
@@ -425,10 +445,119 @@ export default function UniversityList() {
               </motion.div>
             ))}
           </motion.div>
+        ) : (
+          // Table View (Horizontal)
+          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">University</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Code</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Students</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Location</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Type</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredUniversities.map((university) => (
+                    <tr
+                      key={university._id}
+                      className={`hover:bg-gray-50 transition ${
+                        university.block ? "bg-red-50" : ""
+                      }`}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                            {university.logo ? (
+                              <Image
+                                src={university.logo}
+                                alt={university.name}
+                                width={48}
+                                height={48}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center h-full text-lg font-bold text-gray-600">
+                                {university.name.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{university.name}</p>
+                            <p className="text-xs text-gray-500">Est. {university.estd}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                          {university.regNumber}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center w-fit">
+                          <Users className="mr-2" size={14} />
+                          {university.totalStudent || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{university.location}</td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-blue-700 font-medium">{university.type}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {university.block ? (
+                          <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                            Blocked
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                            Active
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Link
+                            href={`/allUniversity/edit/${university.regNumber}`}
+                            className="p-2 hover:bg-blue-50 rounded-lg transition"
+                            title="Edit"
+                          >
+                            <Pencil className="text-blue-500" size={18} />
+                          </Link>
+                          <button
+                            onClick={() => handleBlockClick(university)}
+                            disabled={actionLoading === university._id}
+                            className="p-2 hover:bg-yellow-50 rounded-lg transition disabled:opacity-50"
+                            title={university.block ? "Unblock" : "Block"}
+                          >
+                            {university.block ? (
+                              <UserCheck className="text-green-600" size={18} />
+                            ) : (
+                              <UserLock className="text-yellow-600" size={18} />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(university)}
+                            disabled={actionLoading === university._id}
+                            className="p-2 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                            title="Delete"
+                          >
+                            <Trash className="text-red-500" size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <AnimatePresence>
         {deleteDialog.isOpen && (
           <ConfirmDialog
@@ -444,22 +573,21 @@ export default function UniversityList() {
         )}
       </AnimatePresence>
 
-      {/* Block/Unblock Confirmation Dialog */}
       <AnimatePresence>
         {blockDialog.isOpen && (
           <ConfirmDialog
             isOpen={blockDialog.isOpen}
             title={
-              blockDialog.university?.isBlocked
+              blockDialog.university?.block
                 ? "Unblock University"
                 : "Block University"
             }
             message={
-              blockDialog.university?.isBlocked
-                ? `Are you sure you want to unblock "${blockDialog.university?.name}"? The university will be accessible again.`
-                : `Are you sure you want to block "${blockDialog.university?.name}"? Students won't be able to access this university.`
+              blockDialog.university?.block
+                ? `Unblock "${blockDialog.university?.name}"?`
+                : `Block "${blockDialog.university?.name}"?`
             }
-            confirmText={blockDialog.university?.isBlocked ? "Unblock" : "Block"}
+            confirmText={blockDialog.university?.block ? "Unblock" : "Block"}
             cancelText="Cancel"
             onConfirm={confirmBlock}
             onCancel={() => setBlockDialog({ isOpen: false, university: null })}

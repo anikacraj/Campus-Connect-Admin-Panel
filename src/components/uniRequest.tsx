@@ -5,16 +5,18 @@ const dummyRequests = [
   {
     id: "1",
     name: "Sylhet Engineering University",
-    location: "Sylhet, Bangladesh",
-    estd: "2010",
-    type: "Public",
+    regNumber:"265772",
+    website:"https://seu.edu.bd",
+    email :"seu@gmail.com"
+   
   },
   {
     id: "2",
     name: "Dhaka Private University",
-    location: "Dhaka, Bangladesh",
-    estd: "2005",
-    type: "Private",
+     regNumber:"26772",
+    website:"https://du.edu.bd",
+    email :"du@gmail.com"
+    
   },
 ];
 
@@ -30,17 +32,25 @@ export default function Home() {
           >
             <div>
               <h2 className="text-xl font-semibold">{req.name}</h2>
-              <p className="text-gray-600">{req.location}</p>
+              <p className="text-gray-600">EIIN :{req.regNumber}</p>
               <p className="text-sm text-gray-500">
-                Estd: {req.estd} • {req.type}
+                Website: {req.website} • email{req.email}
               </p>
             </div>
             <Link
-              href={`/createUniPage/${req.id}`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Review & Create
-            </Link>
+  href={{
+    pathname: "/createUniPage",
+    query: {
+      name: req.name,
+      regNumber: req.regNumber,
+      website: req.website,
+      email: req.email,
+    },
+  }}
+  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+>
+  Create University
+</Link>
           </div>
         ))}
       </div>

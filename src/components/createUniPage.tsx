@@ -1,9 +1,15 @@
+//Campus-Connect-Admin-Panel\src\components\createUniPage.tsx
+
 'use client';
 
 import React, { useRef, FormEvent } from "react";
 import { useState } from "react";
 import { Camera, Upload, X, ChevronDown } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
+
 
 // ---- Local Types ----
 export type UniRequestPayload = {
@@ -18,6 +24,8 @@ export type UniRequestPayload = {
   logoImg?: string | null;
   coverImage?: string | null;
 };
+
+
 
 // ---- FormData State ----
 type FormData = UniRequestPayload & {
@@ -43,25 +51,33 @@ const getErrors = (data: FormData) => {
 };
 
 export const UniRequestScreen: React.FC<{ prefill?: Partial<UniRequestPayload> }> = ({ prefill }) => {
-  const [formData, setFormData] = useState<FormData>({
-    name: prefill?.name || "",
-    estd: prefill?.estd || "",
-    location: prefill?.location || "",
-    type: prefill?.type || "",
-    website: prefill?.website || "",
-    bio: prefill?.bio || "",
-    email: prefill?.email || "",
-    regNumber: prefill?.regNumber || "",
-    logo: null,
-    logoPreview: null,
-    coverImage: null,
-    coverImagePreview: null,
-  });
+const searchParams = useSearchParams();
+  const prefillData = {
+  name: searchParams.get("name") || "",
+  regNumber: searchParams.get("regNumber") || "",
+  website: searchParams.get("website") || "",
+  email: searchParams.get("email") || "",
+};
+const [formData, setFormData] = useState<FormData>({
+  name: prefillData.name,
+  estd: "",
+  location: "",
+  type: "",
+  website: prefillData.website,
+  bio: "",
+  email: prefillData.email,
+  regNumber: prefillData.regNumber,
+  logo: null,
+  logoPreview: null,
+  coverImage: null,
+  coverImagePreview: null,
+});
 
   const [submitting, setSubmitting] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const router = useRouter();
 
   const logoFileInputRef = useRef<HTMLInputElement | null>(null);
   const coverFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -75,21 +91,6 @@ export const UniRequestScreen: React.FC<{ prefill?: Partial<UniRequestPayload> }
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-
-  // const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if(file){
-  //     const reader =new FileReader();
-  //     reader.onloadend=()=>{
-  //       const base64=reader.result as string;
-  //       setPreview(base64);
-  //       setFormData((prev) => ({ ...prev, logoImg: base64 }));
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // };
-
-
 
   const handleFileSelect = (
     file: File | undefined,
@@ -167,6 +168,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     if (res.ok) {
       alert("✅ University created successfully!");
+       router.push("/allUniversity");
       setFormData({
         name: "",
         estd: "",
@@ -183,7 +185,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       });
       setPreview(null);
     } else {
-      alert(data.error || "Failed to create university");
+      alert(data.error || "Please Enter The Valid Data ");
     }
   } catch (err: any) {
     console.error("Error submitting form:", err);

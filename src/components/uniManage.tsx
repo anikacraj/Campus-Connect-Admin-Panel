@@ -10,6 +10,8 @@ const universitiesData = [
     { id: 5, name: 'Princeton University', code: 'PRIN', students: 890, status: 'Pending', location: 'Princeton, NJ', established: 1746, partnership: '2024-02-28' },
 ];
 
+
+
 const TableHeader = ({ title, addButtonText }: { title: string, addButtonText: string }) => (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold text-gray-900">{title}</h2>

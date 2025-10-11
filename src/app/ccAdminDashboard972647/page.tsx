@@ -5,11 +5,12 @@ import StudentManage from '@/components/StudentManage';
 import ModeratorManage from '@/components/modManage';
 import UniversityManage from '@/components/uniManage';
 import UniRequest from '@/components/uniRequest';
-
+import UniversityList from '../allUniversity/page';
+import { useRouter } from "next/navigation";
 const AdminDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-
+const router = useRouter();
     const menuItems = [
         { 
             id: 'students', 
@@ -53,7 +54,9 @@ const AdminDashboard = () => {
     // Dashboard home content
     const DashboardHome = () => (
         <div className="space-y-8">
+           
             <div className="bg-white rounded-xl p-8 shadow-sm">
+                 
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
                 <p className="text-gray-600">Welcome back! Manage your student portfolio platform efficiently.</p>
             </div>
@@ -144,7 +147,8 @@ const AdminDashboard = () => {
             case 'moderators':
                 return <ModeratorManage />;
             case 'universities':
-                return <UniversityManage />;
+                 router.push("/allUniversity");
+                // return <UniversityManage />
                 case 'uniRequests':
                 return <UniRequest />;
             default:
@@ -155,47 +159,9 @@ const AdminDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center">
-                            <button
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
-                            >
-                                {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                            </button>
-                            <div className="flex-shrink-0 ml-2 lg:ml-0">
-                                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                                    <GraduationCap className="w-6 h-6 text-white" />
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h1 className="text-xl font-bold text-gray-900">Campus Connect</h1>
-                                <p className="text-xs text-gray-500 hidden sm:block">Admin Panel</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <button className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-                                <Bell className="w-5 h-5" />
-                            </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-                                <Settings className="w-5 h-5" />
-                            </button>
-                            <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                                    <User className="w-4 h-4 text-gray-600" />
-                                </div>
-                                <span className="text-sm font-medium text-gray-700 hidden sm:block">Admin User</span>
-                                <ChevronDown className="w-4 h-4 text-gray-500" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
+        
             <div className="flex">
+             
                 {/* Sidebar */}
                 <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white shadow-lg lg:shadow-none border-r border-gray-200 transition-transform duration-300 ease-in-out`}>
                     <div className="flex flex-col h-full pt-6 pb-4">

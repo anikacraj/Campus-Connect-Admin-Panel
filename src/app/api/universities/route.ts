@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       varsityEmail,
       type = "",
       regNumber = "",
+      block=false,
     } = body;
 
     if (!name || !varsityEmail) {
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
       varsityEmail,
       type,
       regNumber,
+      block
     });
 
     return NextResponse.json(
@@ -78,70 +80,4 @@ export async function GET() {
   }
 }
 
-// PUT - Update university
-export async function PUT(req: Request) {
-  try {
-    await connectDB();
-    const body = await req.json();
 
-    console.log("📝 Received update request:", body);
-
-    const {
-      regNumber, // unique field used to find the record
-      name,
-      logo,
-      coverImage,
-      location,
-      bio,
-      website,
-      estd,
-      varsityEmail,
-      type,
-    } = body;
-
-    if (!regNumber) {
-      return NextResponse.json(
-        { error: "Registration number (regNumber) is required." },
-        { status: 400 }
-      );
-    }
-
-    // Find and update the existing record
-    const updatedUniversity = await University.findOneAndUpdate(
-      { regNumber },
-      {
-        name,
-        logo,
-        coverImage,
-        location,
-        bio,
-        website,
-        estd,
-        varsityEmail,
-        type,
-      },
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedUniversity) {
-      return NextResponse.json(
-        { error: "University not found with this regNumber." },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "✅ University updated successfully!",
-        data: updatedUniversity,
-      },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("❌ Error updating university:", error);
-    return NextResponse.json(
-      { error: "Failed to update university.", details: error.message },
-      { status: 500 }
-    );
-  }
-}

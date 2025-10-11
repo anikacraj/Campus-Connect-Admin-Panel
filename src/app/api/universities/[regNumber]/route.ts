@@ -49,6 +49,7 @@ export async function PUT(
       estd,
       varsityEmail,
       type,
+      block
     } = body;
 
     // Validate required fields
