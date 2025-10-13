@@ -1,3 +1,5 @@
+//src\app\api\users\[_id]\block\route.ts
+
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import UserModel from "@/models/users";

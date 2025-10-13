@@ -165,38 +165,7 @@ export default function StudentList() {
     setFilteredStudents(filtered);
   };
 
-  const handleDeleteClick = (student: Students) => {
-    setDeleteDialog({ isOpen: true, student });
-  };
 
-  const confirmDelete = async () => {
-    if (!deleteDialog.student) return;
-
-    setActionLoading(deleteDialog.student._id);
-    try {
-      const res = await fetch(`/api/users/${deleteDialog.student._id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        setStudents((prev) =>
-          prev.filter((s) => s._id !== deleteDialog.student!._id)
-        );
-        setFilteredStudents((prev) =>
-          prev.filter((s) => s._id !== deleteDialog.student!._id)
-        );
-      } else {
-        const result = await res.json();
-        setError(result.error || "Failed to delete student");
-      }
-    } catch (err: any) {
-      console.error("Delete error:", err);
-      setError(err.message || "Failed to delete student");
-    } finally {
-      setActionLoading(null);
-      setDeleteDialog({ isOpen: false, student: null });
-    }
-  };
 
   const handleBanClick = (student: Students) => {
     setBanDialog({ isOpen: true, student });
@@ -454,14 +423,7 @@ export default function StudentList() {
                               <UserLock className="text-yellow-600" size={18} />
                             )}
                           </button>
-                          <button
-                            onClick={() => handleDeleteClick(student)}
-                            disabled={actionLoading === student._id}
-                            className="p-2 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                            title="Delete"
-                          >
-                            <Trash className="text-red-500" size={18} />
-                          </button>
+                       
                         </div>
                       </td>
                     </motion.tr>
@@ -474,18 +436,7 @@ export default function StudentList() {
       </div>
 
       <AnimatePresence>
-        {deleteDialog.isOpen && (
-          <ConfirmDialog
-            isOpen={deleteDialog.isOpen}
-            title="Delete Student"
-            message={`Are you sure you want to delete "${deleteDialog.student?.name}"? This action cannot be undone.`}
-            confirmText="Delete"
-            cancelText="Cancel"
-            onConfirm={confirmDelete}
-            onCancel={() => setDeleteDialog({ isOpen: false, student: null })}
-            type="danger"
-          />
-        )}
+       
       </AnimatePresence>
 
       <AnimatePresence>

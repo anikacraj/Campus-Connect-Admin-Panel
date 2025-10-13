@@ -1,9 +1,8 @@
-// app/api/users/[_id]/mod/route.ts
+// app/api/users/[_id]/reject-mod/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import UserModel from "@/models/users";
-
 
 export async function PATCH(
   req: NextRequest,
@@ -21,7 +20,7 @@ export async function PATCH(
       );
     }
 
-    // Find the user and update their moderator status
+    // Find the user and reject their moderator request
     const user = await UserModel.findById(_id);
 
     if (!user) {
@@ -34,20 +33,20 @@ export async function PATCH(
     // Check if user has requested for mod
     if (!user.hasRequestedForMod) {
       return NextResponse.json(
-        { error: "User has not requested for moderator role" },
+        { error: "User has no pending moderator request" },
         { status: 400 }
       );
     }
 
-    // Update user to moderator
-    user.isMod = true;
+    // Reject the request by setting hasRequestedForMod to false
     user.hasRequestedForMod = false;
+    user.motivationForMod = ""; // Optional: Clear the motivation
     await user.save();
 
     return NextResponse.json(
       {
         success: true,
-        message: "User approved as moderator successfully",
+        message: "Moderator request rejected successfully",
         data: {
           _id: user._id,
           name: user.name,
@@ -59,9 +58,9 @@ export async function PATCH(
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Error approving moderator:", error);
+    console.error("Error rejecting moderator request:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to approve moderator" },
+      { error: error.message || "Failed to reject moderator request" },
       { status: 500 }
     );
   }
