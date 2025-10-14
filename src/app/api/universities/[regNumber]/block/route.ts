@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import University from "@/models/createUniversity";
+import uniModel from "@/models/uni";
 
 // PATCH - Toggle Block/Unblock university
 export async function PATCH(
@@ -13,7 +14,7 @@ export async function PATCH(
     const { regNumber } = await params;
 
     // Find current university
-    const university = await University.findOne({ regNumber });
+    const university = await uniModel.findOne({ regNumber });
 
     if (!university) {
       return NextResponse.json(
@@ -22,20 +23,18 @@ export async function PATCH(
       );
     }
 
-    // Toggle block status
-    const newBlockStatus = !university.block;
+    if (university.status === 'approved') {
+      university.status = 'pending';
+    } else if (university.status === 'pending') {
+      university.status = 'approved';
+    }
 
-    // Update in database
-    const updatedUniversity = await University.findOneAndUpdate(
-      { regNumber },
-      { $set: { block: newBlockStatus } },
-      { new: true }
-    );
+    await university.save();
 
     return NextResponse.json(
       {
-        message: newBlockStatus ? "University blocked" : "University unblocked",
-        data: updatedUniversity,
+        message: `University has been ${university.status === 'approved' ? 'unblocked' : 'blocked'} successfully.`,
+        data: university,
       },
       { status: 200 }
     );

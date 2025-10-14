@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import University from "@/models/createUniversity";
+import uniModel from "@/models/uni";
 
 // POST - Create new university
 export async function POST(req: Request) {
@@ -18,20 +19,19 @@ export async function POST(req: Request) {
       bio = "",
       website = "",
       estd = 0,
-      varsityEmail,
+      email,
       type = "",
       regNumber = "",
-      block=false,
     } = body;
 
-    if (!name || !varsityEmail) {
+    if (!name || !regNumber || !email) {
       return NextResponse.json(
         { error: "Name and varsityEmail are required." },
         { status: 400 }
       );
     }
 
-    const existingProfile = await University.findOne({ varsityEmail });
+    const existingProfile = await University.findOne({ regNumber });
     if (existingProfile) {
       return NextResponse.json(
         { error: "University with this email already exists." },
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const newUniversity = await University.create({
+    const newUniversity = await uniModel.create({
       name,
       logo,
       coverImage,
@@ -47,11 +47,13 @@ export async function POST(req: Request) {
       bio,
       website,
       estd,
-      varsityEmail,
+      email,
       type,
       regNumber,
-      block
     });
+
+    newUniversity.status = "approved";
+    await newUniversity.save();
 
     return NextResponse.json(
       { message: "✅ University created successfully!", data: newUniversity },
@@ -70,7 +72,7 @@ export async function POST(req: Request) {
 export async function GET() {
   try {
     await connectDB();
-    const universities = await University.find({}).sort({ createdAt: -1 });
+    const universities = await uniModel.find({status:"approved"}).sort({ createdAt: -1 });
     return NextResponse.json({ data: universities }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json(

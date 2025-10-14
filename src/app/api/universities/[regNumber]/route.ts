@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import University from "@/models/createUniversity";
+import uniModel from "@/models/uni";
 
 // GET - Fetch single university by regNumber
 export async function GET(
@@ -11,7 +12,7 @@ export async function GET(
   try {
     await connectDB();
     const { regNumber } = await params;
-    const university = await University.findOne({ regNumber });
+    const university = await uniModel.findOne({ regNumber });
 
     if (!university) {
       return NextResponse.json(
@@ -47,13 +48,12 @@ export async function PUT(
       bio,
       website,
       estd,
-      varsityEmail,
-      type,
-      block
+      email,
+      type
     } = body;
 
     // Validate required fields
-    if (!name || !varsityEmail) {
+    if (!name || !email) {
       return NextResponse.json(
         { error: "Name and varsityEmail are required." },
         { status: 400 }
@@ -73,9 +73,9 @@ export async function PUT(
     }
 
     // Check if email is being changed and if it's already taken by another university
-    if (varsityEmail !== existingUniversity.varsityEmail) {
+    if (email !== existingUniversity.email) {
       const emailExists = await University.findOne({ 
-        varsityEmail,
+        email,
         regNumber: { $ne: regNumber } // Exclude current university
       });
 
@@ -96,7 +96,7 @@ export async function PUT(
     if (bio !== undefined) updateData.bio = bio;
     if (website !== undefined) updateData.website = website;
     if (estd !== undefined) updateData.estd = estd;
-    if (varsityEmail !== undefined) updateData.varsityEmail = varsityEmail;
+    if (email !== undefined) updateData.varsityEmail = email;
     if (type !== undefined) updateData.type = type;
 
     const updatedUniversity = await University.findOneAndUpdate(

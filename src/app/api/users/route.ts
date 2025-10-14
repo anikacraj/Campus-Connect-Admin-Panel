@@ -8,6 +8,7 @@ export async function GET() {
   try {
     await connectDB();
     const users = await UserModel.find({}).sort({ createdAt: -1 });
+    console.log(users)
     return NextResponse.json({ data: users }, { status: 200 });
     console.log(users)
   } catch (error: any) {
