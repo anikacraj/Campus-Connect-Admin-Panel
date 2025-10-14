@@ -150,7 +150,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       bio: formData.bio?.trim() || "",
       website: formData.website?.trim() || "",
       estd: Number(formData.estd) || 0,
-      varsityEmail: formData.email?.trim() || "",
+      email: formData.email?.trim() || "",
       type: formData.type?.trim() || "",
       regNumber: formData.regNumber?.trim() || "",
     };

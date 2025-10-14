@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Users, Shield, GraduationCap, Plus, Eye, Bell, Settings, User, ChevronDown, Home, Menu, X } from 'lucide-react';
 import StudentManage from '@/components/StudentManage';
 import ModeratorManage from '@/components/modManage';
@@ -7,9 +7,178 @@ import UniversityManage from '@/components/uniManage';
 import UniRequest from '@/components/uniRequest';
 import UniversityList from '../allUniversity/page';
 import { useRouter } from "next/navigation";
+
+interface Students {
+
+}
+
+interface ModRequest {
+ _id: string;
+  name: string;
+  email: string;
+  profileUrl: string;
+  university: string;
+  hasRequestedForMod: boolean;
+  motivationForMod: string;
+  isMod: boolean;
+  isBanned?: boolean;
+  requestedAt?: string;
+}
+
+
 const AdminDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [students, setStudents] = useState<Students[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<Students[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+    const [universitiesRequest, setUniversitiesRequest] = useState<[]>([]);
+    const [filteredUniversitiesRequest, setFilteredUniversitiesRequest] = useState<[]>([]);
+
+ const [universities, setUniversities] = useState<[]>([]);
+  const [filteredUniversities, setFilteredUniversities] = useState<[]>([]);
+
+   const [requests, setRequests] = useState<ModRequest[]>([]);
+
+    useEffect(() => {
+      fetchStudents();
+      fetchUniversitiesRequest();
+      fetchUniversities();
+         fetchRequests();
+
+    }, []);
+
+
+      const normalizeStudentData = (data: any[]): Students[] => {
+    return data.map(student => ({
+      ...student,
+      isBanned: student.isBanned ?? student.banned ?? false
+    }));
+  };
+      const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/users");
+      
+      if (!res.ok) {
+        throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+      }
+      
+      const result = await res.json();
+      
+      if (result.data) {
+        const normalizedData = normalizeStudentData(result.data);
+        setStudents(normalizedData);
+        setFilteredStudents(normalizedData);
+        console.log("Fetched students:", normalizedData);
+      } else {
+        setError(result.error || "Failed to fetch students");
+      }
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      setError(err.message || "Failed to fetch students");
+    } finally {
+      setLoading(false);
+    }
+  };
+const fetchUniversitiesRequest = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/universities/uniRequest");
+      const result = await res.json();
+
+      if (res.ok) {
+        setUniversitiesRequest(result.data);
+        setFilteredUniversitiesRequest(result.data);
+        setError(null);
+      } else {
+        setError(result.error || "Failed to fetch universities");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch universities");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+   const fetchUniversities = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/universities");
+      const result = await res.json();
+      if (res.ok) {
+        setUniversities(result.data);
+        setFilteredUniversities(result.data);
+      } else {
+        setError(result.error || "Failed to fetch universities");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch universities");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+const normalizeRequestData = useCallback((data: any[]): ModRequest[] => {
+    return data.map((student) => ({
+      ...student,
+      hasRequestedForMod: student.hasRequestedForMod ?? false,
+      isMod: student.isMod ?? false,
+      isBanned: student.isBanned ?? false,
+      motivationForMod: student.motivationForMod || "",
+    }));
+  }, []);
+
+ const fetchRequests = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/users");
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+      }
+
+      const result = await res.json();
+
+      if (result.data) {
+        const normalizedData = normalizeRequestData(result.data);
+        const modRelatedUsers = normalizedData.filter(
+          (user) => user.hasRequestedForMod || user.isMod
+        );
+        setRequests(modRelatedUsers);
+      } else {
+        setError(result.error || "Failed to fetch mod requests");
+      }
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      setError(err.message || "Failed to fetch mod requests");
+    } finally {
+      setLoading(false);
+    }
+  }, [normalizeRequestData]);
+
+
+
+
+    if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center gap-3 text-gray-700 text-lg font-semibold">
+         
+          Loading students...
+        </div>
+      </div>
+    );
+  }
+       
+
 const router = useRouter();
     const menuItems = [
         { 
@@ -60,8 +229,12 @@ const router = useRouter();
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
                 <p className="text-gray-600">Welcome back! Manage your student portfolio platform efficiently.</p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {menuItems.map((item) => {
                     const IconComponent = item.icon;
                     return (
@@ -95,7 +268,9 @@ const router = useRouter();
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-blue-100 text-sm font-medium mb-1">Total Students</p>
-                            <p className="text-3xl font-bold">2,458</p>
+                            <p className="text-3xl font-bold">
+ <span className="text-white ml-2">{filteredStudents.length}</span>
+                            </p>
                         </div>
                         <div className="bg-blue-400 bg-opacity-30 rounded-lg p-3">
                             <Users className="w-8 h-8 text-white" />
@@ -106,7 +281,9 @@ const router = useRouter();
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-green-100 text-sm font-medium mb-1">Total Moderators</p>
-                            <p className="text-3xl font-bold">24</p>
+                              <p className="text-3xl font-bold">
+                  <span className="text-white ml-2">{fetchRequests.length}</span>
+                  </p>
                         </div>
                         <div className="bg-green-400 bg-opacity-30 rounded-lg p-3">
                             <Shield className="w-8 h-8 text-white" />
@@ -117,7 +294,9 @@ const router = useRouter();
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-purple-100 text-sm font-medium mb-1">Universities</p>
-                            <p className="text-3xl font-bold">156</p>
+                              <p className="text-3xl font-bold">
+                            <span className="text-white ml-2">{filteredUniversities.length}</span>
+                            </p>
                         </div>
                         <div className="bg-purple-400 bg-opacity-30 rounded-lg p-3">
                             <GraduationCap className="w-8 h-8 text-white" />
@@ -128,7 +307,13 @@ const router = useRouter();
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-orange-100 text-sm font-medium mb-1">Total University Request </p>
-                            <p className="text-3xl font-bold">1,892</p>
+                            <p className="text-3xl font-bold">
+                             <span className="text-white ml-2">
+                                 
+              {filteredUniversitiesRequest.length}
+
+            </span>
+                        </p>
                         </div>
                         <div className="bg-orange-400 bg-opacity-30 rounded-lg p-3">
                             <Eye className="w-8 h-8 text-white" />
@@ -140,21 +325,30 @@ const router = useRouter();
     );
 
     // Section rendering
-    const renderContent = () => {
-        switch (activeSection) {
-            case 'students':
-                return <StudentManage />;
-            case 'moderators':
-                return <ModeratorManage />;
-            case 'universities':
-                 router.push("/allUniversity");
-                // return <UniversityManage />
-                case 'uniRequests':
-                return <UniRequest />;
-            default:
-                return <DashboardHome />;
-        }
-    };
+// Section rendering
+const renderContent = () => {
+  switch (activeSection) {
+    case 'students':
+      router.push("/allStudents");
+      break;
+
+    case 'moderators':
+      router.push("/allMods");
+      break;
+
+    case 'universities':
+      router.push("/allUniversity");
+      break;
+
+    case 'uniRequests':
+      router.push("/allUniRequest");
+      break;
+
+    default:
+      return <DashboardHome />;
+  }
+};
+
 
     return (
         <div className="min-h-screen bg-gray-50">

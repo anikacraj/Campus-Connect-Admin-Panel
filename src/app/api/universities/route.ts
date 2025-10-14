@@ -1,5 +1,3 @@
-//src\app\api\universities\route.ts
-
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import University from "@/models/createUniversity";
@@ -19,25 +17,26 @@ export async function POST(req: Request) {
       bio = "",
       website = "",
       estd = 0,
-      email,
+      email, // Changed from 'email' to match your frontend
       type = "",
       regNumber = "",
+      reqBy = "admin", // Add default value for reqBy
     } = body;
 
     if (!name || !regNumber || !email) {
       return NextResponse.json(
-        { error: "Name and varsityEmail are required." },
+        { error: "Name, registration number, and email are required." },
         { status: 400 }
       );
     }
 
-    const existingProfile = await University.findOne({ regNumber });
-    if (existingProfile) {
-      return NextResponse.json(
-        { error: "University with this email already exists." },
-        { status: 400 }
-      );
-    }
+    // const existingProfile = await uniModel.findOne({regNumber} );
+    // if (existingProfile) {
+    //   return NextResponse.json(
+    //     { error: "University with this email already exists." },
+    //     { status: 400 }
+    //   );
+    // }
 
     const newUniversity = await uniModel.create({
       name,
@@ -47,13 +46,12 @@ export async function POST(req: Request) {
       bio,
       website,
       estd,
-      email,
+      email, // Changed from 'email'
       type,
       regNumber,
+      reqBy, // Add reqBy field
+      status: "approved", // Set status directly
     });
-
-    newUniversity.status = "approved";
-    await newUniversity.save();
 
     return NextResponse.json(
       { message: "✅ University created successfully!", data: newUniversity },
@@ -67,7 +65,6 @@ export async function POST(req: Request) {
     );
   }
 }
-
 // GET - Fetch all universities
 export async function GET() {
   try {

@@ -96,10 +96,10 @@ export async function PUT(
     if (bio !== undefined) updateData.bio = bio;
     if (website !== undefined) updateData.website = website;
     if (estd !== undefined) updateData.estd = estd;
-    if (email !== undefined) updateData.varsityEmail = email;
+    if (email !== undefined) updateData.email = email;
     if (type !== undefined) updateData.type = type;
 
-    const updatedUniversity = await University.findOneAndUpdate(
+    const updatedUniversity = await uniModel.findOneAndUpdate(
       { regNumber },
       { $set: updateData },
       { new: true, runValidators: true } // Return updated doc & run validation

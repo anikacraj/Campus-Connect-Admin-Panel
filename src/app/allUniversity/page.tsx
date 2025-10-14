@@ -16,7 +16,7 @@ interface University {
   bio: string;
   website: string;
   estd: string;
-  varsityEmail: string;
+ email: string;
   type: string;
   regNumber: string;
   block: boolean;
@@ -394,7 +394,7 @@ export default function UniversityList() {
                       <span className="font-semibold text-blue-500">Website:</span> <Link className="text-blue-500" href={university.website}>{university.website}</Link>
                     </p>
                     <p>
-                      <span className="font-semibold">Email:</span> {university.varsityEmail}
+                      <span className="font-semibold">Email:</span> {university.email}
                     </p>
                     <div className="flex justify-center items-center">
                       <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center">
