@@ -39,7 +39,7 @@ const router = useRouter();
 
       if (res?.ok) {
         // Redirect to dashboard on successful login
-        router.push("/ccAdminDashboard972647");
+        router.push("/admin/ccAdminDashboard972647");
       }
     } catch (error) {
       console.error("Login error:", error);

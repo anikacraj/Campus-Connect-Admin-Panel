@@ -16,11 +16,11 @@ export default function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(true);
 
   const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "/ccAdminDashboard972647" },
-    { name: "Students Manage", icon: Users, href: "/allStudents" },
-    { name: "Mod Manage", icon: ShieldCheck, href: "/allMods" },
-    { name: "University Manage", icon: Building2, href: "/allUniversity" },
-    { name: "University Request", icon: FilePlus2, href: "/allUniRequest" },
+    { name: "Dashboard", icon: LayoutDashboard, href: "/admin/ccAdminDashboard972647" },
+    { name: "Students Manage", icon: Users, href: "/admin/allStudents" },
+    { name: "Mod Manage", icon: ShieldCheck, href: "/admin/allMods" },
+    { name: "University Manage", icon: Building2, href: "/admin/allUniversity" },
+    { name: "University Request", icon: FilePlus2, href: "/admin/allUniRequest" },
   ];
 
   return (

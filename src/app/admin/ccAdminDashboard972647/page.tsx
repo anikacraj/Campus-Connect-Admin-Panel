@@ -216,16 +216,16 @@ const AdminDashboard = () => {
   const renderContent = () => {
     switch (activeSection) {
       case 'students':
-        router.push('/allStudents');
+        router.push('/admin/allStudents');
         break;
       case 'moderators':
-        router.push('/allMods');
+        router.push('/admin/allMods');
         break;
       case 'universities':
-        router.push('/allUniversity');
+        router.push('/admin/allUniversity');
         break;
       case 'uniRequests':
-        router.push('/allUniRequest');
+        router.push('/admin/allUniRequest');
         break;
       default:
         return <DashboardHome />;
@@ -233,10 +233,10 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="max-h-screen bg-gray-50">
       <div className="flex">
         {/* Sidebar */}
-   <AdminSidebar />
+
         {/* Overlay for mobile */}
         {sidebarOpen && (
           <div
