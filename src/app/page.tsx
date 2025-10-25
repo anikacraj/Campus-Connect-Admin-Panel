@@ -39,7 +39,7 @@ const router = useRouter();
 
       if (res?.ok) {
         // Redirect to dashboard on successful login
-        router.push("/admin/ccAdminDashboard972647");
+        router.push("/admin/dashboard");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -54,7 +54,8 @@ const router = useRouter();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-700 to-blue-800 font-[Inter]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800
+font-[Inter]">
       <div className="flex min-h-screen">
         {/* Left side with professional illustration */}
         <div 
@@ -65,10 +66,10 @@ const router = useRouter();
             {/* Modern Admin Dashboard SVG with floating animation */}
             <div className="mb-8">
               <div className="relative">
-                <div className="absolute inset-0 rounded-full animate-pulse bg-blue-500/20"></div>
+                <div className="absolute inset-0 rounded-full animate-pulse bg-gray-500/20"></div>
                 <div className="w-80 h-80 mx-auto relative z-10 " >
                   <svg 
-                    className="w-full h-full text-white/90" 
+                    className="w-full h-full text-gray-300" 
                     fill="currentColor" 
                     viewBox="0 0 24 24"
                   >
@@ -112,7 +113,7 @@ const router = useRouter();
         <div className="flex w-full lg:w-1/2 items-center justify-center p-8">
           <div className="w-full max-w-md">
             {/* Main login card */}
-            <div className="backdrop-blur-xl bg-white/95 rounded-3xl p-8 shadow-2xl border border-white/20">
+            <div className="backdrop-blur-xl bg-white/80 rounded-3xl p-8 shadow-2xl border border-white/20">
               {/* Header section */}
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-6 hover:scale-110 transition-transform duration-200">
@@ -163,7 +164,7 @@ const router = useRouter();
 
                 {/* Password field */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-400 mb-2">
                     Password
                   </label>
                   <div className="relative">
@@ -205,7 +206,8 @@ const router = useRouter();
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300 hover:-translate-y-1 hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+                  className="w-full py-4 bg-gradient-to-r from-gray-600 to-gray-800 text-white font-semibold rounded-xl 
+                  shadow-lg transition-all duration-200 hover:from-gray-700 hover:to-gray-750 focus:outline-none focus:ring-4 focus:ring-blue-300 hover:-translate-y-1 hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">

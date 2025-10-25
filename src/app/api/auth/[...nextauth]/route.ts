@@ -64,6 +64,7 @@ const authOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        
       }
       return token;
     },
@@ -78,4 +79,4 @@ const authOptions = {
 };
 
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST, authOptions };
