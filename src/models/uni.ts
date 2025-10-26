@@ -107,6 +107,9 @@ const uniSchema: Schema = new mongoose.Schema(
   { timestamps: true }
 );
 
+uniSchema.index({ status: 1, createdAt: -1 });
+uniSchema.index({ regNumber: 1 }, { unique: true });
+uniSchema.index({ name: 'text' });
 
 // Use the collection name "unis" (you can change to "universities")
 const uniModel = mongoose.models.Uni || mongoose.model<IUni>("Uni", uniSchema);

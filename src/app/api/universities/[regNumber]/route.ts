@@ -1,7 +1,5 @@
-// src/app/api/universities/[regNumber]/route.ts
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
-import University from "@/models/createUniversity";
 import uniModel from "@/models/uni";
 
 // GET - Fetch single university by regNumber
@@ -12,8 +10,8 @@ export async function GET(
   try {
     await connectDB();
     const { regNumber } = await params;
-    const university = await uniModel.findOne({ regNumber });
 
+    const university = await uniModel.findOne({ regNumber });
     if (!university) {
       return NextResponse.json(
         { error: "University not found" },
@@ -40,6 +38,7 @@ export async function PUT(
     await connectDB();
     const { regNumber } = await params;
     const body = await req.json();
+
     const {
       name,
       logo,
@@ -49,22 +48,19 @@ export async function PUT(
       website,
       estd,
       email,
-      type
+      type,
     } = body;
 
     // Validate required fields
     if (!name || !email) {
       return NextResponse.json(
-        { error: "Name and varsityEmail are required." },
+        { error: "Name and email are required." },
         { status: 400 }
       );
     }
 
     // Check if university exists
-    const existingUniversity = await University.findOne({ 
-      regNumber 
-    });
-
+    const existingUniversity = await uniModel.findOne({ regNumber });
     if (!existingUniversity) {
       return NextResponse.json(
         { error: "University not found" },
@@ -72,11 +68,11 @@ export async function PUT(
       );
     }
 
-    // Check if email is being changed and if it's already taken by another university
+    // Check if email is being changed and already taken
     if (email !== existingUniversity.email) {
-      const emailExists = await University.findOne({ 
+      const emailExists = await uniModel.findOne({
         email,
-        regNumber: { $ne: regNumber } // Exclude current university
+        regNumber: { $ne: regNumber },
       });
 
       if (emailExists) {
@@ -87,7 +83,7 @@ export async function PUT(
       }
     }
 
-    // Update university - only update fields that are provided
+    // Prepare update data
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (logo !== undefined) updateData.logo = logo;
@@ -102,13 +98,13 @@ export async function PUT(
     const updatedUniversity = await uniModel.findOneAndUpdate(
       { regNumber },
       { $set: updateData },
-      { new: true, runValidators: true } // Return updated doc & run validation
+      { new: true, runValidators: true }
     );
 
     return NextResponse.json(
-      { 
-        message: "✅ University updated successfully!", 
-        data: updatedUniversity 
+      {
+        message: "✅ University updated successfully!",
+        data: updatedUniversity,
       },
       { status: 200 }
     );
@@ -121,35 +117,36 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete university by regNumber (bonus)
-export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ regNumber: string }> }
-) {
-  try {
-    await connectDB();
-    const { regNumber } = await params;
+
+// // DELETE - Delete university by regNumber (bonus)
+// export async function DELETE(
+//   req: Request,
+//   { params }: { params: Promise<{ regNumber: string }> }
+// ) {
+//   try {
+//     await connectDB();
+//     const { regNumber } = await params;
     
-    const deletedUniversity = await University.findOneAndDelete({ 
-      regNumber 
-    });
+//     const deletedUniversity = await University.findOneAndDelete({ 
+//       regNumber 
+//     });
 
-    if (!deletedUniversity) {
-      return NextResponse.json(
-        { error: "University not found" },
-        { status: 404 }
-      );
-    }
+//     if (!deletedUniversity) {
+//       return NextResponse.json(
+//         { error: "University not found" },
+//         { status: 404 }
+//       );
+//     }
 
-    return NextResponse.json(
-      { message: "✅ University deleted successfully!" },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("❌ Error deleting university:", error);
-    return NextResponse.json(
-      { error: "Failed to delete university.", details: error.message },
-      { status: 500 }
-    );
-  }
-}
+//     return NextResponse.json(
+//       { message: "✅ University deleted successfully!" },
+//       { status: 200 }
+//     );
+//   } catch (error: any) {
+//     console.error("❌ Error deleting university:", error);
+//     return NextResponse.json(
+//       { error: "Failed to delete university.", details: error.message },
+//       { status: 500 }
+//     );
+//   }
+// }

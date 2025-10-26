@@ -1,10 +1,10 @@
 "use client";
-import { usePathname } from "next/navigation";
 
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -19,15 +19,20 @@ import {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-gray-100">
       {/* Sidebar */}
-      <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
- 
+      <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} isMounted={isMounted} />
+
       {/* Content */}
       <div className="flex-1 flex flex-col bg-gray-100">
-        <AdminHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <AdminHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} isMounted={isMounted} />
         <main className="flex-1 p-6 bg-gray-50">{children}</main>
         <AdminFooter />
       </div>
@@ -36,20 +41,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 }
 
 /* Sidebar */
-function AdminSidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v: boolean) => void }) {
-  const pathname = usePathname(); // ✅ Current route
-const menuItems = [
+function AdminSidebar({
+  isOpen,
+  setIsOpen,
+  isMounted,
+}: {
+  isOpen: boolean;
+  setIsOpen: (v: boolean) => void;
+  isMounted: boolean;
+}) {
+  const pathname = usePathname();
+
+  const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
     { name: "Students Manage", icon: Users, href: "/admin/allStudents" },
     { name: "Mod Manage", icon: ShieldCheck, href: "/admin/allMods" },
     { name: "University Manage", icon: Building2, href: "/admin/allUniversity" },
     { name: "University Request", icon: FilePlus2, href: "/admin/allUniRequest" },
   ];
+
   return (
     <div
       className={`${
         isOpen ? "w-64" : "w-20"
-      } bg-gray-800 text-gray-100 h-screen flex flex-col transition-all duration-300 sticky rounded-md border-r border-gray-800`}
+      } bg-gray-800 text-gray-100 h-screen flex flex-col transition-all duration-300 sticky top-0 rounded-md border-r border-gray-700`}
     >
       {/* Sidebar Header */}
       <div className="flex items-center justify-between p-4">
@@ -64,7 +79,8 @@ const menuItems = [
       {/* Menu */}
       <nav className="flex-1 px-3 space-y-2">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href;
+          // Only check active state after mount to avoid hydration mismatch
+          const isActive = isMounted && pathname === item.href;
 
           return (
             <Link
@@ -94,19 +110,42 @@ const menuItems = [
 }
 
 /* Header */
-function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
+function AdminHeader({
+  onMenuClick,
+  isMounted,
+}: {
+  onMenuClick?: () => void;
+  isMounted: boolean;
+}) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifications] = useState(4);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.profile-dropdown')) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [dropdownOpen, isMounted]);
+
   return (
-    <header className="bg-gray-800 w-full text-gray-100 px-6  py-5 flex items-center justify-between shadow-sm sticky top-0 z-50 border-b
-     border-gray-800 rounded-r-md ">
+    <header className="bg-gray-800 w-full text-gray-100 px-6 py-5 flex items-center justify-between shadow-sm sticky top-0 z-50 border-b border-gray-700 rounded-r-md">
       {/* Left */}
-      <div className="flex items-center gap-4 ">
+      <div className="flex items-center gap-4">
         <button onClick={onMenuClick} className="text-gray-300 hover:text-white lg:hidden">
           <Menu size={26} />
         </button>
-        <h1 className="text-2xl font-bold ml-[-6]">Campus Connect </h1>
+        <h1 className="text-2xl font-bold">Campus Connect</h1>
       </div>
 
       {/* Right icons */}
@@ -122,23 +161,32 @@ function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
         </button>
 
         {/* Profile */}
-        <div className="relative">
-          <button onClick={() => setDropdownOpen((p) => !p)} className="flex items-center gap-2">
-            <Image src="/admin-avatar.jpg" alt="" width={46} height={46} className="rounded-full" />
+        <div className="relative profile-dropdown">
+          <button
+            onClick={() => setDropdownOpen((p) => !p)}
+            className="flex items-center gap-2"
+          >
+            <Image
+              src="/admin-avatar.jpg"
+              alt="Admin"
+              width={46}
+              height={46}
+              className="rounded-full"
+            />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 mt-3 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-xl">
+            <div className="absolute right-0 mt-3 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50">
               <div className="px-4 py-3 border-b border-gray-700">
                 <p className="text-sm font-medium">Admin</p>
                 <p className="text-xs opacity-60">admin@example.com</p>
               </div>
-             <button
-      onClick={() => signOut({ callbackUrl: "/" })}
-      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-700 text-sm"
-    >
-      <LogOut size={18} /> Logout
-    </button>
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-700 text-sm"
+              >
+                <LogOut size={18} /> Logout
+              </button>
             </div>
           )}
         </div>
@@ -150,7 +198,7 @@ function AdminHeader({ onMenuClick }: { onMenuClick?: () => void }) {
 /* Footer */
 function AdminFooter() {
   return (
-    <footer className="bg-gray-800 text-gray-400 py-8 text-center text-sm border-t border-gray-800 bottom-30">
+    <footer className="bg-gray-800 text-gray-400 py-8 text-center text-sm border-t border-gray-700">
       © {new Date().getFullYear()} Admin Panel |{" "}
       <span className="text-gray-200">Developed by Team NEUB</span>
     </footer>

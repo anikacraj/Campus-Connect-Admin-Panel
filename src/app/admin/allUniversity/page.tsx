@@ -48,6 +48,7 @@ function ConfirmDialog({
 }: ConfirmDialogProps) {
   if (!isOpen) return null;
 
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <motion.div
@@ -127,24 +128,33 @@ export default function UniversityList() {
     fetchUniversities();
   }, []);
 
-  const fetchUniversities = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/universities");
-      const result = await res.json();
-      if (res.ok) {
-        setUniversities(result.data);
-        setFilteredUniversities(result.data);
-      } else {
-        setError(result.error || "Failed to fetch universities");
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch universities");
-    } finally {
-      setLoading(false);
+ const fetchUniversities = async () => {
+  try {
+    setLoading(true);
+    const res = await fetch("/api/universities?page=1&limit=50"); // Add pagination
+    const result = await res.json();
+    if (res.ok) {
+      setUniversities(result.data);
+      setFilteredUniversities(result.data);
+    } else {
+      setError(result.error || "Failed to fetch universities");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    setError("Failed to fetch universities");
+  } finally {
+    setLoading(false);
+  }
+};
+  const getWebsiteUrl = (url: string) => {
+  if (!url) return '#';
+  // Check if URL already has protocol
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // Add https:// if missing
+  return `https://${url}`;
+};
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
@@ -390,9 +400,17 @@ export default function UniversityList() {
                     <p>
                       <span className="font-semibold">Location:</span> {university.location}
                     </p>
-                    <p>
-                      <span className="font-semibold text-blue-500">Website:</span> <Link className="text-blue-500" href={university.website}>{university.website}</Link>
-                    </p>
+                 <p>
+  <span className="font-semibold text-blue-500">Website:</span>{' '}
+  <Link 
+    className="text-blue-500 hover:underline" 
+    href={getWebsiteUrl(university.website)}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    {university.website}
+  </Link>
+</p>
                     <p>
                       <span className="font-semibold">Email:</span> {university.email}
                     </p>
