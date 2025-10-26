@@ -412,7 +412,7 @@ export default function UniversityList() {
 
                   <div className="flex justify-end gap-3 mt-4">
                     <Link
-                      href={`/allUniversity/edit/${university.regNumber}`}
+                      href={`/admin/allUniversity/edit/${university.regNumber}`}
                       className="p-2 hover:bg-blue-50 rounded-lg transition"
                       title="Edit University"
                     >

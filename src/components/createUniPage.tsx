@@ -1,497 +1,315 @@
-//Campus-Connect-Admin-Panel\src\components\createUniPage.tsx
-
 'use client';
 
-import React, { useRef, FormEvent } from "react";
-import { useState } from "react";
-import { Camera, Upload, X, ChevronDown } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Camera, Upload, X, ChevronDown, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-
-
-// ---- Local Types ----
-export type UniRequestPayload = {
-  name: string;
-  estd: number | string;
-  location: string;
-  type: string;
-  website: string;
-  bio: string;
-  email: string;
-  regNumber: string;
-  logoImg?: string | null;
-  coverImage?: string | null;
-};
-
-
-
-// ---- FormData State ----
-type FormData = UniRequestPayload & {
-  logo: string | null;
-  logoPreview: string | null;
-  coverImage: string | null;
-  coverImagePreview: string | null;
-};
-
-// ---- Simple Frontend Error Checker ----
-const getErrors = (data: FormData) => {
-  const errors: Record<string, string> = {};
-  if (!data.name) errors.name = "University name is required.";
-  if (!data.estd) errors.estd = "Established year is required.";
-  if (!data.location) errors.location = "Location is required.";
-  if (!data.type) errors.type = "Type is required.";
-  if (!data.website) errors.website = "Website is required.";
-  if (!data.bio || data.bio.length < 20)
-    errors.bio = "Bio must be at least 20 characters.";
-  if (!data.email) errors.email = "Email is required.";
-  if (!data.regNumber) errors.regNumber = "Registration number is required.";
-  return errors;
-};
-
-export const UniRequestScreen: React.FC<{ prefill?: Partial<UniRequestPayload> }> = ({ prefill }) => {
-const searchParams = useSearchParams();
-  const prefillData = {
-  name: searchParams.get("name") || "",
-  regNumber: searchParams.get("regNumber") || "",
-  website: searchParams.get("website") || "",
-  email: searchParams.get("email") || "",
-};
-const [formData, setFormData] = useState<FormData>({
-  name: prefillData.name,
-  estd: "",
-  location: "",
-  type: "",
-  website: prefillData.website,
-  bio: "",
-  email: prefillData.email,
-  regNumber: prefillData.regNumber,
-  logo: null,
-  logoPreview: null,
-  coverImage: null,
-  coverImagePreview: null,
-});
-
-  const [submitting, setSubmitting] = useState(false);
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+export const UniRequestScreen: React.FC = () => {
+  const searchParams = useSearchParams();
   const router = useRouter();
 
-  const logoFileInputRef = useRef<HTMLInputElement | null>(null);
-  const coverFileInputRef = useRef<HTMLInputElement | null>(null);
+  const prefillData = {
+    name: searchParams.get("name") || "",
+    regNumber: searchParams.get("regNumber") || "",
+    website: searchParams.get("website") || "",
+    email: searchParams.get("email") || "",
+  };
+
+  const [formData, setFormData] = useState({
+    name: prefillData.name,
+    estd: "",
+    location: "",
+    type: "",
+    website: prefillData.website,
+    bio: "",
+    email: prefillData.email,
+    regNumber: prefillData.regNumber,
+    logo: null as string | null,
+    logoPreview: null as string | null,
+    coverImage: null as string | null,
+    coverImagePreview: null as string | null,
+  });
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const logoFileRef = useRef<HTMLInputElement | null>(null);
+  const coverFileRef = useRef<HTMLInputElement | null>(null);
 
   const universityTypes = ["Private", "Public"];
 
-  const updateFormData = (field: keyof FormData, value: any) => {
+  const updateFormData = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const getErrors = () => {
+    const e: Record<string, string> = {};
+    if (!formData.name) e.name = "Name is required";
+    if (!formData.estd) e.estd = "Established year is required";
+    if (!formData.location) e.location = "Location is required";
+    if (!formData.type) e.type = "Type is required";
+    if (!formData.website) e.website = "Website is required";
+    if (!formData.bio || formData.bio.length < 20)
+      e.bio = "Bio must be at least 20 characters";
+    if (!formData.email) e.email = "Email is required";
+    if (!formData.regNumber) e.regNumber = "Registration number is required";
+    return e;
+  };
+  const errors = getErrors();
 
-  const handleFileSelect = (
-    file: File | undefined,
-    type: "logo" | "coverImage"
-  ) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return;
+  const showError = (f: string) => touched[f] && errors[f];
 
+  const handleFileSelect = (file: File | undefined, type: "logo" | "coverImage") => {
+    if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      if (type === "logo") {
-        updateFormData("logo", result);
+      if (type === "logo")
         updateFormData("logoPreview", result);
-      } else {
-        updateFormData("coverImage", result);
+      else
         updateFormData("coverImagePreview", result);
-      }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleChooseFile = (type: "logo" | "coverImage") => {
-    if (type === "logo") logoFileInputRef.current?.click();
-    else coverFileInputRef.current?.click();
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
 
-  const handleRemoveImage = (type: "logo" | "coverImage") => {
-    if (type === "logo") {
-      updateFormData("logo", null);
-      updateFormData("logoPreview", null);
-      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
-    } else {
-      updateFormData("coverImage", null);
-      updateFormData("coverImagePreview", null);
-      if (coverFileInputRef.current) coverFileInputRef.current.value = "";
-    }
-  };
-
-  const showError = (field: string) => submitAttempted || touched[field];
-  const handleBlur = (field: string) =>
-    setTouched((t) => ({ ...t, [field]: true }));
-
-  const errors = getErrors(formData);
-  const isFormValid = Object.keys(errors).length === 0 && !submitting;
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    const payload = {
-      name: formData.name?.trim() || "",
-      logo: formData.logo || "",
-      coverImage: formData.coverImage || "",
-      location: formData.location?.trim() || "",
-      bio: formData.bio?.trim() || "",
-      website: formData.website?.trim() || "",
-      estd: Number(formData.estd) || 0,
-      email: formData.email?.trim() || "",
-      type: formData.type?.trim() || "",
-      regNumber: formData.regNumber?.trim() || "",
-    };
-
-    console.log("Submitting payload:", payload);
-
-    const res = await fetch("/api/universities", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    console.log("Response:", data);
-
-    if (res.ok) {
-      alert("✅ University created successfully!");
-       router.push("/allUniversity");
-      setFormData({
-        name: "",
-        estd: "",
-        location: "",
-        type: "",
-        website: "",
-        bio: "",
-        email: "",
-        regNumber: "",
-        logo: null,
-        logoPreview: null,
-        coverImage: null,
-        coverImagePreview: null,
+    try {
+      const res = await fetch("/api/universities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-      setPreview(null);
-    } else {
-      alert(data.error || "Please Enter The Valid Data ");
+
+      if (res.ok) {
+        alert("✅ University created successfully!");
+        router.push("/admin/allUniversity");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Submission failed");
+      }
+    } catch {
+      alert("Network error — please try again.");
+    } finally {
+      setSubmitting(false);
     }
-  } catch (err: any) {
-    console.error("Error submitting form:", err);
-    alert("Something went wrong while submitting the form.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-
-
-  const ImageUploadSection = ({
+  const ImageUpload = ({
     title,
-    type,
     preview,
-    error,
-    aspectRatio = "square",
+    type,
   }: {
     title: string;
-    type: "logo" | "coverImage";
     preview: string | null;
-    error?: string;
-    aspectRatio?: "square" | "wide";
+    type: "logo" | "coverImage";
   }) => (
-    <div>
-      <label className="text-sm font-medium mb-2 block">{title}</label>
+    <div className="flex flex-col gap-2">
+      <label className="text-sm font-semibold">{title}</label>
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors hover:border-blue-500 cursor-pointer ${
-          aspectRatio === "wide" ? "min-h-[200px]" : ""
+        className={`border-2 border-dashed rounded-xl p-5 text-center transition-all hover:border-blue-500 hover:bg-blue-50/30 cursor-pointer ${
+          preview ? "bg-white/80 shadow-sm" : "bg-gray-50/70"
         }`}
-        onClick={() => (type)}
+        onClick={() =>
+          (type === "logo"
+            ? logoFileRef.current?.click()
+            : coverFileRef.current?.click())
+        }
       >
         {preview ? (
-          <div className="flex flex-col items-center">
-            <img
+          <div className="flex flex-col items-center gap-2">
+            <Image
               src={preview}
               alt={`${title} preview`}
-              className={`mx-auto mb-2 object-contain rounded ${
-                aspectRatio === "wide" ? "h-32 w-full max-w-md" : "h-24 w-24"
+              width={120}
+              height={120}
+              className={`rounded-lg object-cover ${
+                type === "coverImage" ? "w-full h-32" : "w-24 h-24"
               }`}
             />
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 type="button"
-                className="px-3 py-1 border rounded-md text-sm flex items-center gap-1"
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  handleChooseFile(type);
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFileSelect(undefined, type);
+                  updateFormData(
+                    type === "logo" ? "logoPreview" : "coverImagePreview",
+                    null
+                  );
                 }}
+                className="px-3 py-1 border text-sm rounded-md hover:bg-red-50 text-red-500 flex items-center gap-1"
               >
-                <Upload className="h-4 w-4" /> Replace
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1 border rounded-md text-sm flex items-center gap-1"
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  handleRemoveImage(type);
-                }}
-              >
-                <X className="h-4 w-4" /> Remove
+                <X size={14} /> Remove
               </button>
             </div>
           </div>
         ) : (
-          <>
-            <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-500 mb-2">
-              Click to upload {title.toLowerCase()}
-            </p>
-            <button
-              type="button"
-              className="px-3 py-1 border rounded-md text-sm flex items-center gap-1"
-              onClick={(ev) => {
-                ev.stopPropagation();
-                handleChooseFile(type);
-              }}
-            >
-              <Upload className="h-4 w-4" /> Choose File
-            </button>
-          </>
+          <div className="flex flex-col items-center text-gray-500">
+            <Camera className="w-10 h-10 mb-1" />
+            <p className="text-xs mb-2">Upload {title}</p>
+            <Upload className="w-4 h-4" />
+          </div>
         )}
       </div>
-      {showError(type) && error && (
-        <p className="text-sm text-red-500 mt-1">{error}</p>
-      )}
     </div>
   );
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="max-w-3xl">
-        <h2 className="text-3xl font-bold tracking-tight mb-6">
-          Request to Add Your University
-        </h2>
-
-        <div className="border rounded-lg shadow-sm p-6">
-          <h3 className="text-xl font-semibold mb-2">University Information</h3>
-          <p className="text-sm text-gray-500 mb-6">
-            Help us expand our network by adding your university.
+    <div className="max-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-10 px-5 flex justify-center">
+      <div className="max-w-4xl w-full bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-5">
+          <h2 className="text-2xl font-bold">Add a New University</h2>
+          <p className="text-sm text-blue-100 mt-1">
+            Fill out the details below to register your institution.
           </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ImageUploadSection
-                title="University Logo"
-                type="logo"
-                preview={formData.logoPreview}
-                error={errors.logo}
-                aspectRatio="square"
-              />
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ImageUpload title="University Logo" preview={formData.logoPreview} type="logo" />
+            <ImageUpload title="Cover Image" preview={formData.coverImagePreview} type="coverImage" />
+          </div>
 
-              <ImageUploadSection
-                title="Cover Image"
-                type="coverImage"
-                preview={formData.coverImagePreview}
-                error={errors.coverImage}
-                aspectRatio="wide"
-              />
-            </div>
+          <input
+            ref={logoFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileSelect(e.target.files?.[0], "logo")}
+          />
+          <input
+            ref={coverFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileSelect(e.target.files?.[0], "coverImage")}
+          />
 
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              ref={logoFileInputRef}
-              onChange={(ev) => {
-                const file = ev.target.files?.[0];
-                handleFileSelect(file, "logo");
-                ev.currentTarget.value = "";
-              }}
-            />
-
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              ref={coverFileInputRef}
-              onChange={(ev) => {
-                const file = ev.target.files?.[0];
-                handleFileSelect(file, "coverImage");
-                ev.currentTarget.value = "";
-              }}
-            />
-
-            {/* Form Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="University Name *"
-                  value={formData.name}
-                  onChange={(e) => updateFormData("name", e.target.value)}
-                  onBlur={() => handleBlur("name")}
-                />
-                {showError("name") && errors.name && (
-                  <p className="text-sm text-red-500 mt-1">{errors.name}</p>
-                )}
-              </div>
-
-              <div>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Established Year *"
-                  type="number"
-                  value={formData.estd}
-                  onChange={(e) => updateFormData("estd", e.target.value)}
-                  onBlur={() => handleBlur("estd")}
-                />
-                {showError("estd") && errors.estd && (
-                  <p className="text-sm text-red-500 mt-1">{errors.estd}</p>
-                )}
-              </div>
-
-              <div>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Location *"
-                  value={formData.location}
-                  onChange={(e) => updateFormData("location", e.target.value)}
-                  onBlur={() => handleBlur("location")}
-                />
-                {showError("location") && errors.location && (
-                  <p className="text-sm text-red-500 mt-1">{errors.location}</p>
-                )}
-              </div>
-
-              <div className="relative">
-                <div
-                  className="flex h-10 w-full rounded-md border px-3 py-2 text-sm cursor-pointer hover:bg-gray-50"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  onBlur={() => handleBlur("type")}
-                >
-                  <span
-                    className={`flex-1 ${
-                      !formData.type ? "text-gray-400" : ""
-                    }`}
-                  >
-                    {formData.type || "University Type *"}
-                  </span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      dropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </div>
-
-                {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border rounded-md shadow-lg">
-                    {universityTypes.map((type) => (
-                      <div
-                        key={type}
-                        className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          updateFormData("type", type);
-                          setDropdownOpen(false);
-                        }}
-                      >
-                        {type}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {showError("type") && errors.type && (
-                  <p className="text-sm text-red-500 mt-1">{errors.type}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {["name", "estd", "location"].map((field) => (
               <input
-                className="w-full border rounded-md px-3 py-2 text-sm"
-                placeholder="Website URL (e.g., https://university.edu) *"
-                type="url"
-                value={formData.website}
-                onChange={(e) => updateFormData("website", e.target.value)}
-                onBlur={() => handleBlur("website")}
+                key={field}
+                placeholder={
+                  field === "name"
+                    ? "University Name *"
+                    : field === "estd"
+                    ? "Established Year *"
+                    : "Location *"
+                }
+                type={field === "estd" ? "number" : "text"}
+                value={(formData as any)[field]}
+                onChange={(e) => updateFormData(field, e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, [field]: true }))}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all ${
+                  showError(field) ? "border-red-400" : "border-gray-300"
+                }`}
               />
-              {showError("website") && errors.website && (
-                <p className="text-sm text-red-500 mt-1">{errors.website}</p>
+            ))}
+
+            <div className="relative">
+              <div
+                className={`flex items-center justify-between w-full border rounded-lg px-3 py-2 text-sm cursor-pointer focus:ring-2 focus:ring-blue-400 ${
+                  showError("type") ? "border-red-400" : "border-gray-300"
+                }`}
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                <span className={!formData.type ? "text-gray-400" : ""}>
+                  {formData.type || "Select Type *"}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    dropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </div>
+              {dropdownOpen && (
+                <div className="absolute bg-white border rounded-md mt-1 shadow-md w-full z-10">
+                  {universityTypes.map((type) => (
+                    <div
+                      key={type}
+                      onClick={() => {
+                        updateFormData("type", type);
+                        setDropdownOpen(false);
+                      }}
+                      className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                    >
+                      {type}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
+          </div>
 
-            <div>
-              <textarea
-                className="w-full border rounded-md px-3 py-2 text-sm"
-                placeholder="University Bio/Description (min 20 characters) *"
-                rows={4}
-                value={formData.bio}
-                onChange={(e) => updateFormData("bio", e.target.value)}
-                onBlur={() => handleBlur("bio")}
-              />
-              <div className="flex justify-between items-center mt-1">
-                {showError("bio") && errors.bio ? (
-                  <p className="text-sm text-red-500">{errors.bio}</p>
-                ) : (
-                  <span></span>
-                )}
-                <span className="text-sm text-gray-500">
-                  {formData.bio.length}/1000
-                </span>
-              </div>
-            </div>
+          <input
+            type="url"
+            placeholder="Website URL (https://example.edu) *"
+            value={formData.website}
+            onChange={(e) => updateFormData("website", e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, website: true }))}
+            className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 ${
+              showError("website") ? "border-red-400" : "border-gray-300"
+            }`}
+          />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Contact Email *"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => updateFormData("email", e.target.value)}
-                  onBlur={() => handleBlur("email")}
-                />
-                {showError("email") && errors.email && (
-                  <p className="text-sm text-red-500 mt-1">{errors.email}</p>
-                )}
-              </div>
+          <textarea
+            placeholder="University Bio (min 20 characters) *"
+            rows={4}
+            value={formData.bio}
+            onChange={(e) => updateFormData("bio", e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, bio: true }))}
+            className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 ${
+              showError("bio") ? "border-red-400" : "border-gray-300"
+            }`}
+          ></textarea>
 
-              <div>
-                <input
-                  className="w-full border rounded-md px-3 py-2 text-sm"
-                  placeholder="Registration / EIN Number *"
-                  value={formData.regNumber}
-                  onChange={(e) => updateFormData("regNumber", e.target.value)}
-                  onBlur={() => handleBlur("regNumber")}
-                />
-                {showError("regNumber") && errors.regNumber && (
-                  <p className="text-sm text-red-500 mt-1">{errors.regNumber}</p>
-                )}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className={`w-full px-4 py-2 rounded-md bg-blue-600 text-white text-lg font-medium ${
-                !isFormValid || submitting
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-blue-700"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="email"
+              placeholder="Contact Email *"
+              value={formData.email}
+              onChange={(e) => updateFormData("email", e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 ${
+                showError("email") ? "border-red-400" : "border-gray-300"
               }`}
-              disabled={!isFormValid || submitting}
-            >
-              {submitting ? "Submitting..." : "Submit University Profile"}
-            </button>
-          </form>
-        </div>
+            />
+
+            <input
+              placeholder="Registration / EIN Number *"
+              value={formData.regNumber}
+              onChange={(e) => updateFormData("regNumber", e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, regNumber: true }))}
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 ${
+                showError("regNumber") ? "border-red-400" : "border-gray-300"
+              }`}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className={`w-full py-3 mt-10 rounded-lg text-white text-lg font-medium transition-all ${
+              submitting
+                ? "bg-blue-400 cursor-wait"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
+            }`}
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="animate-spin h-5 w-5" /> Submitting...
+              </span>
+            ) : (
+              "Submit University Profile"
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );
