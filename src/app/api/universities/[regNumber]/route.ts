@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import uniModel from "@/models/uni";
 
+// Helper function to validate base64 images
+function isValidBase64Image(str: string): boolean {
+  if (!str) return true;
+  return /^data:image\/(png|jpg|jpeg|gif|webp);base64,/.test(str);
+}
+
 // GET - Fetch single university by regNumber
 export async function GET(
   req: Request,
@@ -59,6 +65,53 @@ export async function PUT(
       );
     }
 
+    // Validate bio length
+    if (bio !== undefined && bio.length < 20) {
+      return NextResponse.json(
+        { error: "Bio must be at least 20 characters." },
+        { status: 400 }
+      );
+    }
+
+    // Validate website URL
+    if (website !== undefined && website) {
+      try {
+        new URL(website);
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid website URL format." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate establishment year
+    if (estd !== undefined && estd) {
+      const year = parseInt(estd);
+      const currentYear = new Date().getFullYear();
+      if (isNaN(year) || year < 1000 || year > currentYear) {
+        return NextResponse.json(
+          { error: "Invalid establishment year." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate images
+    if (logo !== undefined && logo && !isValidBase64Image(logo)) {
+      return NextResponse.json(
+        { error: "Invalid logo image format." },
+        { status: 400 }
+      );
+    }
+
+    if (coverImage !== undefined && coverImage && !isValidBase64Image(coverImage)) {
+      return NextResponse.json(
+        { error: "Invalid cover image format." },
+        { status: 400 }
+      );
+    }
+
     // Check if university exists
     const existingUniversity = await uniModel.findOne({ regNumber });
     if (!existingUniversity) {
@@ -110,6 +163,15 @@ export async function PUT(
     );
   } catch (error: any) {
     console.error("❌ Error updating university:", error);
+
+    // Handle mongoose validation errors
+    if (error.name === 'ValidationError') {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to update university.", details: error.message },
       { status: 500 }
@@ -117,36 +179,35 @@ export async function PUT(
   }
 }
 
+// DELETE - Delete university by regNumber
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ regNumber: string }> }
+) {
+  try {
+    await connectDB();
+    const { regNumber } = await params;
 
-// // DELETE - Delete university by regNumber (bonus)
-// export async function DELETE(
-//   req: Request,
-//   { params }: { params: Promise<{ regNumber: string }> }
-// ) {
-//   try {
-//     await connectDB();
-//     const { regNumber } = await params;
-    
-//     const deletedUniversity = await University.findOneAndDelete({ 
-//       regNumber 
-//     });
+    const deletedUniversity = await uniModel.findOneAndDelete({
+      regNumber
+    });
 
-//     if (!deletedUniversity) {
-//       return NextResponse.json(
-//         { error: "University not found" },
-//         { status: 404 }
-//       );
-//     }
+    if (!deletedUniversity) {
+      return NextResponse.json(
+        { error: "University not found" },
+        { status: 404 }
+      );
+    }
 
-//     return NextResponse.json(
-//       { message: "✅ University deleted successfully!" },
-//       { status: 200 }
-//     );
-//   } catch (error: any) {
-//     console.error("❌ Error deleting university:", error);
-//     return NextResponse.json(
-//       { error: "Failed to delete university.", details: error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
+    return NextResponse.json(
+      { message: "✅ University deleted successfully!" },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("❌ Error deleting university:", error);
+    return NextResponse.json(
+      { error: "Failed to delete university.", details: error.message },
+      { status: 500 }
+    );
+  }
+}
