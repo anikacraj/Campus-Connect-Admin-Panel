@@ -1,7 +1,56 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
-import University from "@/models/createUniversity";
 import uniModel from "@/models/uni";
+
+// GET - Fetch all universities with pagination and filtering
+export async function GET(request: Request) {
+  try {
+    await connectDB();
+    
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const status = searchParams.get('status');
+    
+    const skip = (page - 1) * limit;
+    
+    // Build filter
+    let filter = {};
+    if (status && status !== 'all') {
+      filter = { status };
+    }
+    
+    // Get universities with pagination
+    const universities = await uniModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination
+    const total = await uniModel.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+    
+    return NextResponse.json({ 
+      data: universities,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    }, { status: 200 });
+    
+  } catch (error: any) {
+    console.error("❌ Error fetching universities:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch universities", details: error.message },
+      { status: 500 }
+    );
+  }
+}
 
 // POST - Create new university
 export async function POST(req: Request) {
@@ -17,10 +66,10 @@ export async function POST(req: Request) {
       bio = "",
       website = "",
       estd = 0,
-      email, // Changed from 'email' to match your frontend
+      email,
       type = "",
       regNumber = "",
-      reqBy = "admin", // Add default value for reqBy
+      reqBy = "admin",
     } = body;
 
     if (!name || !regNumber || !email) {
@@ -30,13 +79,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // const existingProfile = await uniModel.findOne({regNumber} );
-    // if (existingProfile) {
-    //   return NextResponse.json(
-    //     { error: "University with this email already exists." },
-    //     { status: 400 }
-    //   );
-    // }
+    // Check if university already exists
+    const existingUniversity = await uniModel.findOne({ regNumber });
+    if (existingUniversity) {
+      return NextResponse.json(
+        { error: "University with this registration number already exists." },
+        { status: 400 }
+      );
+    }
 
     const newUniversity = await uniModel.create({
       name,
@@ -46,15 +96,18 @@ export async function POST(req: Request) {
       bio,
       website,
       estd,
-      email, // Changed from 'email'
+      email,
       type,
       regNumber,
-      reqBy, // Add reqBy field
-      status: "approved", // Set status directly
+      reqBy,
+      status: "pending", // Default status
     });
 
     return NextResponse.json(
-      { message: "✅ University created successfully!", data: newUniversity },
+      { 
+        message: "✅ University created successfully!", 
+        data: newUniversity 
+      },
       { status: 201 }
     );
   } catch (error: any) {
@@ -65,18 +118,3 @@ export async function POST(req: Request) {
     );
   }
 }
-// GET - Fetch all universities
-export async function GET() {
-  try {
-    await connectDB();
-    const universities = await uniModel.find({status:"approved"}).sort({ createdAt: -1 });
-    return NextResponse.json({ data: universities }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Failed to fetch universities", details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-

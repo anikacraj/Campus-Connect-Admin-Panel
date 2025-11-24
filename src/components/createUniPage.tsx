@@ -130,50 +130,52 @@ export const UniRequestScreen: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setSubmitting(true);
 
-    try {
-      const isEditing = !!prefillData.regNumber;
-      const url = isEditing
-        ? `/api/universities/${prefillData.regNumber}`
-        : "/api/universities";
-      const method = isEditing ? "PUT" : "POST";
+  try {
+    const isEditing = !!prefillData.regNumber;
+    const url = isEditing
+      ? `/api/universities/${prefillData.regNumber}`
+      : "/api/universities";
+    const method = isEditing ? "PUT" : "POST";
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          estd: formData.estd,
-          location: formData.location,
-          type: formData.type,
-          website: formData.website,
-          bio: formData.bio,
-          email: formData.email,
-          regNumber: formData.regNumber,
-          logo: formData.logo,
-          coverImage: formData.coverImage,
-        }),
-      });
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: formData.name,
+        estd: formData.estd,
+        location: formData.location,
+        type: formData.type,
+        website: formData.website,
+        bio: formData.bio,
+        email: formData.email,
+        regNumber: formData.regNumber,
+        logo: formData.logo,
+        coverImage: formData.coverImage,
+        status: "pending", // ✅ Add status field
+        reqBy: "admin", // ✅ Add reqBy field
+      }),
+    });
 
-      if (res.ok) {
-        alert(isEditing
-          ? "✅ University updated successfully!"
-          : "✅ University created successfully!"
-        );
-        router.push("/admin/allUniversity");
-      } else {
-        const data = await res.json();
-        alert(data.error || "Submission failed");
-      }
-    } catch {
-      alert("Network error — please try again.");
-    } finally {
-      setSubmitting(false);
+    if (res.ok) {
+      alert(isEditing
+        ? "✅ University updated successfully!"
+        : "✅ University request submitted successfully! Waiting for approval."
+      );
+      router.push("/admin/allUniversity");
+    } else {
+      const data = await res.json();
+      alert(data.error || "Submission failed");
     }
-  };
+  } catch {
+    alert("Network error — please try again.");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // ✅ Fixed: Improved ImageUpload component with better image handling
   const ImageUpload = ({

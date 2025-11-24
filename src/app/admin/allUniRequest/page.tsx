@@ -23,6 +23,17 @@ interface University {
   totalStudent: string;
 }
 
+interface Students {
+  _id: string;
+  name: string;
+  email: string;
+  profileUrl: string;
+  isBanned: boolean;
+  banned?: boolean;
+  isMod: boolean;
+  university: string;
+}
+
 export default function Page() {
   const [universities, setUniversities] = useState<University[]>([]);
   const [filteredUniversities, setFilteredUniversities] = useState<University[]>([]);

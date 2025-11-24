@@ -11,10 +11,36 @@ interface Students {
   name: string;
   email: string;
   profileUrl: string;
+  profilePhoto?: string;
   isBanned: boolean;
   banned?: boolean;
   isMod: boolean;
-  university: string;
+  uniObjectID: string; // This is the correct field!
+  university?: string; // This might be incorrect/old data
+  rollNumber: string;
+  session: string;
+  program: string;
+  course: string;
+  bio: string;
+  status: string;
+}
+
+interface University {
+  _id: string; // This matches uniObjectID
+  name: string;
+  logo: string;
+  coverImage: string;
+  location: string;
+  bio: string;
+  website: string;
+  estd: string;
+  email: string;
+  type: string;
+  regNumber: string;
+  block: boolean;
+  createdAt: string;
+  updatedAt: string;
+  totalStudent: string;
 }
 
 interface ConfirmDialogProps {
@@ -98,6 +124,8 @@ function ConfirmDialog({
 export default function StudentList() {
   const [students, setStudents] = useState<Students[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Students[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [universityMap, setUniversityMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -116,13 +144,45 @@ export default function StudentList() {
 
   useEffect(() => {
     fetchStudents();
+    fetchUniversities();
   }, []);
+
+  useEffect(() => {
+    // Create a mapping of university _id (ObjectId) to university name
+    if (universities.length > 0) {
+      const map: Record<string, string> = {};
+      universities.forEach(uni => {
+        map[uni._id] = uni.name;
+      });
+      setUniversityMap(map);
+      console.log("University mapping created with", universities.length, "universities");
+    }
+  }, [universities]);
 
   const normalizeStudentData = (data: any[]): Students[] => {
     return data.map(student => ({
       ...student,
-      isBanned: student.isBanned ?? student.banned ?? false
+      isBanned: student.isBanned ?? student.banned ?? false,
+      profileUrl: student.profilePhoto || student.profileUrl || "",
+      // Use uniObjectID as the primary university identifier
+      uniObjectID: student.uniObjectID || student.university || ""
     }));
+  };
+
+  const fetchUniversities = async () => {
+    try {
+      const res = await fetch("/api/universities");
+      const result = await res.json();
+
+      if (res.ok) {
+        setUniversities(result.data);
+        console.log("Fetched universities:", result.data.length);
+      } else {
+        console.error("Failed to fetch universities:", result.error);
+      }
+    } catch (err) {
+      console.error("Error fetching universities:", err);
+    }
   };
 
   const fetchStudents = async () => {
@@ -141,7 +201,12 @@ export default function StudentList() {
         const normalizedData = normalizeStudentData(result.data);
         setStudents(normalizedData);
         setFilteredStudents(normalizedData);
-        console.log("Fetched students:", normalizedData);
+        console.log("Fetched students:", normalizedData.length);
+        console.log("Sample student university data:", normalizedData.slice(0, 3).map(s => ({
+          name: s.name,
+          uniObjectID: s.uniObjectID,
+          university: s.university
+        })));
       } else {
         setError(result.error || "Failed to fetch students");
       }
@@ -160,12 +225,26 @@ export default function StudentList() {
       (student) =>
         student.name.toLowerCase().includes(value) ||
         student.email.toLowerCase().includes(value) ||
-        student.university.toLowerCase().includes(value)
+        (getUniversityName(student.uniObjectID)?.toLowerCase() || '').includes(value) ||
+        student.rollNumber.toLowerCase().includes(value) ||
+        student.program.toLowerCase().includes(value)
     );
     setFilteredStudents(filtered);
   };
 
+  // Function to get university name from uniObjectID
+  const getUniversityName = (uniObjectID: string): string => {
+    if (!uniObjectID) return "No University";
+    
+    const universityName = universityMap[uniObjectID];
+    console.log(`Looking up university for ObjectId: ${uniObjectID}, found: ${universityName}`);
+    return universityName || "University Not Found";
+  };
 
+  // Function to get university details by uniObjectID
+  const getUniversityDetails = (uniObjectID: string): University | null => {
+    return universities.find(uni => uni._id === uniObjectID) || null;
+  };
 
   const handleBanClick = (student: Students) => {
     setBanDialog({ isOpen: true, student });
@@ -286,7 +365,10 @@ export default function StudentList() {
             </div>
 
             <button
-              onClick={fetchStudents}
+              onClick={() => {
+                fetchStudents();
+                fetchUniversities();
+              }}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition"
             >
               <RefreshCw size={16} />
@@ -315,6 +397,9 @@ export default function StudentList() {
                       University
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                      Program
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
                       Role
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
@@ -326,118 +411,144 @@ export default function StudentList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredStudents.map((student, index) => (
-                    <motion.tr
-                      key={student._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      className={`hover:bg-gray-50 transition ${
-                        student.isBanned ? "bg-red-50" : ""
-                      }`}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                            {student.profileUrl ? (
-                              <Image
-                                src={student.profileUrl}
-                                alt={student.name}
-                                width={48}
-                                height={48}
-                                className="object-cover w-full h-full"
-                              />
-                            ) : (
-                              <div className="flex items-center justify-center h-full text-lg font-bold text-gray-600">
-                                {student.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                  {filteredStudents.map((student, index) => {
+                    const universityDetails = getUniversityDetails(student.uniObjectID);
+                    
+                    return (
+                      <motion.tr
+                        key={student._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.02 }}
+                        className={`hover:bg-gray-50 transition ${
+                          student.isBanned ? "bg-red-50" : ""
+                        }`}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                              {student.profileUrl || student.profilePhoto ? (
+                                <Image
+                                  src={student.profileUrl || student.profilePhoto}
+                                  alt={student.name}
+                                  width={48}
+                                  height={48}
+                                  className="object-cover w-full h-full"
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center h-full text-lg font-bold text-gray-600">
+                                  {student.name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                {student.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Roll: {student.rollNumber} | {student.session}
+                              </p>
+                            </div>
                           </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-gray-700">{student.email}</p>
+                        </td>
+
+                        <td className="px-6 py-4">
                           <div>
-                            <p className="font-semibold text-gray-900">
-                              {student.name}
+                            <p className="text-sm text-gray-700 font-medium">
+                              {getUniversityName(student.uniObjectID)}
                             </p>
-                            <p className="text-xs text-gray-500">ID: {student._id.slice(-6)}</p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-gray-700">{student.email}</p>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-gray-700">{student.university}</p>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {student.isMod ? (
-                          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold flex items-center w-fit gap-1">
-                            <Shield size={12} />
-                            Moderator
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
-                            Student
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {student.isBanned ? (
-                          <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
-                            Banned
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                            Active
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Link
-                            href={`/students/${student._id}`}
-                            className="p-2 hover:bg-blue-50 rounded-lg transition"
-                            title="View Details"
-                          >
-                            <Eye className="text-blue-500" size={18} />
-                          </Link>
-                          <Link
-                            href={`/students/edit/${student._id}`}
-                            className="p-2 hover:bg-blue-50 rounded-lg transition"
-                            title="Edit"
-                          >
-                            <Pencil className="text-blue-500" size={18} />
-                          </Link>
-                          <button
-                            onClick={() => handleBanClick(student)}
-                            disabled={actionLoading === student._id}
-                            className="p-2 hover:bg-yellow-50 rounded-lg transition disabled:opacity-50"
-                            title={student.isBanned ? "Unban" : "Ban"}
-                          >
-                            {student.isBanned ? (
-                              <UserCheck className="text-green-600" size={18} />
-                            ) : (
-                              <UserLock className="text-yellow-600" size={18} />
+                            {universityDetails && (
+                              <p className="text-xs text-gray-500">
+                                Reg: {universityDetails.regNumber}
+                              </p>
                             )}
-                          </button>
-                       
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
+                            {!universityDetails && student.uniObjectID && (
+                              <p className="text-xs text-red-500">
+                                ID: {student.uniObjectID.slice(-6)}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="text-sm text-gray-700">{student.program}</p>
+                            <p className="text-xs text-gray-500">{student.course}</p>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {student.isMod ? (
+                            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold flex items-center w-fit gap-1">
+                              <Shield size={12} />
+                              Moderator
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+                              Student
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {student.isBanned ? (
+                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                              Banned
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                              Active
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                             {universityDetails &&
+                            <Link
+                              href={`https://campus-connect-beta-nine.vercel.app/uni/${universityDetails.regNumber}/s/${student.
+rollNumber
+}`}
+                              className="p-2 hover:bg-blue-50 rounded-lg transition"
+                              title="View Details"
+                            >
+                              <Eye className="text-blue-500" size={18} />
+                            </Link>
+                  }
+                            {/* <Link
+                              href={`/students/edit/${student._id}`}
+                              className="p-2 hover:bg-blue-50 rounded-lg transition"
+                              title="Edit"
+                            >
+                              <Pencil className="text-blue-500" size={18} />
+                            </Link> */}
+                            <button
+                              onClick={() => handleBanClick(student)}
+                              disabled={actionLoading === student._id}
+                              className="p-2 hover:bg-yellow-50 rounded-lg transition disabled:opacity-50"
+                              title={student.isBanned ? "Unban" : "Ban"}
+                            >
+                              {student.isBanned ? (
+                                <UserCheck className="text-green-600" size={18} />
+                              ) : (
+                                <UserLock className="text-yellow-600" size={18} />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
         )}
       </div>
-
-      <AnimatePresence>
-       
-      </AnimatePresence>
 
       <AnimatePresence>
         {banDialog.isOpen && (

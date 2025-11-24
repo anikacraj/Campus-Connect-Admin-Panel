@@ -1,4 +1,3 @@
-//src/app/allUniversity/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,13 +15,19 @@ interface University {
   bio: string;
   website: string;
   estd: string;
- email: string;
+  email: string;
   type: string;
   regNumber: string;
   block: boolean;
   createdAt: string;
   updatedAt: string;
   totalStudent: string;
+}
+
+interface Student {
+  _id: string;
+  uniObjectID: string;
+  isBanned: boolean;
 }
 
 interface ConfirmDialogProps {
@@ -47,7 +52,6 @@ function ConfirmDialog({
   type,
 }: ConfirmDialogProps) {
   if (!isOpen) return null;
-
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -107,6 +111,8 @@ function ConfirmDialog({
 export default function UniversityList() {
   const [universities, setUniversities] = useState<University[]>([]);
   const [filteredUniversities, setFilteredUniversities] = useState<University[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -126,35 +132,79 @@ export default function UniversityList() {
 
   useEffect(() => {
     fetchUniversities();
+    fetchStudents();
   }, []);
 
- const fetchUniversities = async () => {
-  try {
-    setLoading(true);
-    const res = await fetch("/api/universities?page=1&limit=50"); // Add pagination
-    const result = await res.json();
-    if (res.ok) {
-      setUniversities(result.data);
-      setFilteredUniversities(result.data);
-    } else {
-      setError(result.error || "Failed to fetch universities");
+  useEffect(() => {
+    // Calculate student counts when students data is loaded
+    if (students.length > 0 && universities.length > 0) {
+      calculateStudentCounts();
     }
-  } catch (err) {
-    console.error(err);
-    setError("Failed to fetch universities");
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [students, universities]);
+
+  const fetchUniversities = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/universities?page=1&limit=50");
+      const result = await res.json();
+      if (res.ok) {
+        setUniversities(result.data);
+        setFilteredUniversities(result.data);
+      } else {
+        setError(result.error || "Failed to fetch universities");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch universities");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const result = await res.json();
+        setStudents(result.data || []);
+      } else {
+        console.error("Failed to fetch students");
+      }
+    } catch (err) {
+      console.error("Error fetching students:", err);
+    }
+  };
+
+  const calculateStudentCounts = () => {
+    const counts: Record<string, number> = {};
+    
+    // Initialize all universities with 0 students
+    universities.forEach(uni => {
+      counts[uni._id] = 0;
+    });
+
+    // Count students for each university
+    students.forEach(student => {
+      if (student.uniObjectID && !student.isBanned) {
+        counts[student.uniObjectID] = (counts[student.uniObjectID] || 0) + 1;
+      }
+    });
+
+    setStudentCounts(counts);
+    console.log("Student counts calculated:", counts);
+  };
+
+  const getStudentCount = (universityId: string): number => {
+    return studentCounts[universityId] || 0;
+  };
+
   const getWebsiteUrl = (url: string) => {
-  if (!url) return '#';
-  // Check if URL already has protocol
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  // Add https:// if missing
-  return `https://${url}`;
-};
+    if (!url) return '#';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return `https://${url}`;
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
@@ -313,7 +363,10 @@ export default function UniversityList() {
             </div>
 
             <button
-              onClick={fetchUniversities}
+              onClick={() => {
+                fetchUniversities();
+                fetchStudents();
+              }}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition"
             >
               <RefreshCw size={16} />
@@ -400,24 +453,24 @@ export default function UniversityList() {
                     <p>
                       <span className="font-semibold">Location:</span> {university.location}
                     </p>
-                 <p>
-  <span className="font-semibold text-blue-500">Website:</span>{' '}
-  <Link 
-    className="text-blue-500 hover:underline" 
-    href={getWebsiteUrl(university.website)}
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    {university.website}
-  </Link>
-</p>
+                    <p>
+                      <span className="font-semibold text-blue-500">Website:</span>{' '}
+                      <Link 
+                        className="text-blue-500 hover:underline" 
+                        href={getWebsiteUrl(university.website)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {university.website}
+                      </Link>
+                    </p>
                     <p>
                       <span className="font-semibold">Email:</span> {university.email}
                     </p>
                     <div className="flex justify-center items-center">
                       <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center">
                         <Users className="mr-2" size={16} />
-                        <span>{university.totalStudent || 0}</span>
+                        <span>{getStudentCount(university._id)} Students</span>
                       </span>
                     </div>
                   </div>
@@ -518,7 +571,7 @@ export default function UniversityList() {
                       <td className="px-6 py-4">
                         <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center w-fit">
                           <Users className="mr-2" size={14} />
-                          {university.totalStudent || 0}
+                          {getStudentCount(university._id)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">{university.location}</td>
@@ -539,7 +592,7 @@ export default function UniversityList() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <Link
-                            href={`/allUniversity/edit/${university.regNumber}`}
+                            href={`/admin/allUniversity/edit/${university.regNumber}`}
                             className="p-2 hover:bg-blue-50 rounded-lg transition"
                             title="Edit"
                           >
